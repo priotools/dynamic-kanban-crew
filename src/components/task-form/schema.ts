@@ -9,7 +9,7 @@ export const taskFormSchema = z.object({
   priority: z.enum(["low", "medium", "high", "urgent"]),
   assigneeId: z.string().optional(),
   departmentId: z.string(),
-  dueDate: z.date().optional(),
+  dueDate: z.string().optional(),
   tags: z.string().optional(),
 });
 
@@ -36,7 +36,7 @@ export const getDefaultValues = (
     priority: initialValues?.priority || "medium",
     assigneeId: initialValues?.assigneeId || undefined,
     departmentId: initialValues?.departmentId || currentUserDepartmentId || "",
-    dueDate: initialValues?.dueDate ? new Date(initialValues.dueDate) : undefined,
+    dueDate: initialValues?.dueDate || undefined,
     tags: initialValues?.tags?.join(", ") || "",
   };
 };

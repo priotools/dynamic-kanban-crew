@@ -43,7 +43,7 @@ export function TaskForm({
       priority: values.priority,
       assigneeId: values.assigneeId === "unassigned" ? undefined : values.assigneeId,
       departmentId: values.departmentId,
-      dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
+      dueDate: values.dueDate,
       tags: processedTags,
     });
   };
