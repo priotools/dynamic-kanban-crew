@@ -63,6 +63,8 @@ export default function TaskFormDialog({
     onSubmit({
       ...values,
       tags: processedTags,
+      // Convert Date object to ISO string for the API
+      dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
     });
   };
 
