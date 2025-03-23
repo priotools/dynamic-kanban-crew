@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { Task, TaskStatus, KanbanColumn } from "@/types";
 import { getTasks, getTasksByStatus, addTask as addTaskService, updateTask as updateTaskService, deleteTask as deleteTaskService, moveTask as moveTaskService } from "@/services/task.service";
 import { toast } from "sonner";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 type KanbanContextType = {
   columns: KanbanColumn[];
@@ -12,6 +13,7 @@ type KanbanContextType = {
   addTask: (task: Omit<Task, "id" | "createdAt">) => void;
   deleteTask: (taskId: string) => void;
   isLoading: boolean;
+  isSupabaseReady: boolean;
 };
 
 const kanbanStatuses: { id: TaskStatus; title: string }[] = [
@@ -28,8 +30,26 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSupabaseReady, setIsSupabaseReady] = useState(false);
 
   useEffect(() => {
+    // Check if Supabase is properly configured
+    const supabaseConfigured = isSupabaseConfigured();
+    setIsSupabaseReady(supabaseConfigured);
+    
+    if (!supabaseConfigured) {
+      // Initialize empty columns
+      const emptyColumns = kanbanStatuses.map(status => ({
+        id: status.id,
+        title: status.title,
+        tasks: []
+      }));
+      setColumns(emptyColumns);
+      setIsLoading(false);
+      toast.error("Supabase configuration missing. Tasks can't be loaded.");
+      return;
+    }
+
     // Fetch tasks from Supabase
     const fetchTasks = async () => {
       setIsLoading(true);
@@ -49,12 +69,22 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error("Error loading tasks:", err);
         toast.error("Failed to load tasks");
+        
+        // Initialize with empty columns on error
+        const emptyColumns = kanbanStatuses.map(status => ({
+          id: status.id,
+          title: status.title,
+          tasks: []
+        }));
+        setColumns(emptyColumns);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchTasks();
+    if (supabaseConfigured) {
+      fetchTasks();
+    }
   }, []);
 
   // Update columns whenever tasks change
@@ -79,6 +109,11 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
   }, [tasks]);
 
   const moveTask = async (taskId: string, newStatus: TaskStatus) => {
+    if (!isSupabaseReady) {
+      toast.error("Cannot update task: Supabase is not configured");
+      return;
+    }
+    
     try {
       const updatedTask = await moveTaskService(taskId, newStatus);
       
@@ -96,6 +131,11 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateTask = async (updatedTask: Task) => {
+    if (!isSupabaseReady) {
+      toast.error("Cannot update task: Supabase is not configured");
+      return;
+    }
+    
     try {
       const result = await updateTaskService(updatedTask);
       
@@ -113,6 +153,11 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTask = async (task: Omit<Task, "id" | "createdAt">) => {
+    if (!isSupabaseReady) {
+      toast.error("Cannot add task: Supabase is not configured");
+      return;
+    }
+    
     try {
       const newTask = await addTaskService(task);
       
@@ -125,6 +170,11 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTask = async (taskId: string) => {
+    if (!isSupabaseReady) {
+      toast.error("Cannot delete task: Supabase is not configured");
+      return;
+    }
+    
     try {
       await deleteTaskService(taskId);
       
@@ -145,7 +195,8 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
         updateTask, 
         addTask, 
         deleteTask, 
-        isLoading 
+        isLoading,
+        isSupabaseReady
       }}
     >
       {children}

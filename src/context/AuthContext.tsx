@@ -1,8 +1,9 @@
 
 import { User } from "@/types";
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { getUserById } from "@/services/user.service";
+import { toast } from "sonner";
 
 type AuthContextType = {
   currentUser: User | null;
@@ -10,6 +11,7 @@ type AuthContextType = {
   logout: () => void;
   isLoading: boolean;
   error: string | null;
+  isSupabaseReady: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,8 +20,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSupabaseReady, setIsSupabaseReady] = useState(false);
 
   useEffect(() => {
+    // Check if Supabase is properly configured
+    const supabaseConfigured = isSupabaseConfigured();
+    setIsSupabaseReady(supabaseConfigured);
+    
+    if (!supabaseConfigured) {
+      setIsLoading(false);
+      setError("Supabase is not configured properly. Please set the required environment variables.");
+      toast.error("Supabase configuration missing. Check console for details.");
+      console.error("Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.");
+      return;
+    }
+
     // Check for current session
     const checkSession = async () => {
       setIsLoading(true);
@@ -40,28 +55,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     
-    checkSession();
-    
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          const user = await getUserById(session.user.id);
-          if (user) {
-            setCurrentUser(user);
+    if (supabaseConfigured) {
+      checkSession();
+      
+      // Subscribe to auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (event === 'SIGNED_IN' && session?.user) {
+            try {
+              const user = await getUserById(session.user.id);
+              if (user) {
+                setCurrentUser(user);
+              }
+            } catch (error) {
+              console.error("Error getting user data:", error);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            setCurrentUser(null);
           }
-        } else if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
         }
-      }
-    );
-    
-    return () => {
-      subscription.unsubscribe();
-    };
+      );
+      
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    if (!isSupabaseReady) {
+      setError("Cannot login: Supabase is not configured properly");
+      return false;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -95,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    if (!isSupabaseReady) return;
+    
     try {
       await supabase.auth.signOut();
       setCurrentUser(null);
@@ -104,7 +132,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, isLoading, error }}>
+    <AuthContext.Provider value={{ 
+      currentUser, 
+      login, 
+      logout, 
+      isLoading, 
+      error, 
+      isSupabaseReady 
+    }}>
       {children}
     </AuthContext.Provider>
   );
