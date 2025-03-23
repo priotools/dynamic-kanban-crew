@@ -1,14 +1,15 @@
 
 import { Task } from "@/types";
-import { getDepartmentById, getUserById } from "@/data/mockData";
 import { useDialog } from "@/hooks/useDialog";
 import TaskFormDialog from "./TaskFormDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TaskHeader } from "./task-detail/TaskHeader";
 import { TaskDescription } from "./task-detail/TaskDescription";
 import { TaskMetadata } from "./task-detail/TaskMetadata";
 import { TaskTimestamps } from "./task-detail/TaskTimestamps";
 import { TaskActions } from "./task-detail/TaskActions";
+import { getUserById } from "@/services/user.service";
+import { getDepartmentById } from "@/services/department.service";
 
 type TaskDetailDialogProps = {
   task: Task;
@@ -23,10 +24,30 @@ export default function TaskDetailDialog({
 }: TaskDetailDialogProps) {
   const { openDialog, DialogComponent } = useDialog();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [assignee, setAssignee] = useState<any | null>(null);
+  const [creator, setCreator] = useState<any | null>(null);
+  const [department, setDepartment] = useState<any | null>(null);
   
-  const assignee = task.assigneeId ? getUserById(task.assigneeId) : null;
-  const creator = getUserById(task.createdBy);
-  const department = getDepartmentById(task.departmentId);
+  useEffect(() => {
+    const loadTaskData = async () => {
+      try {
+        if (task.assigneeId) {
+          const assigneeData = await getUserById(task.assigneeId);
+          setAssignee(assigneeData);
+        }
+        
+        const creatorData = await getUserById(task.createdBy);
+        setCreator(creatorData);
+        
+        const departmentData = await getDepartmentById(task.departmentId);
+        setDepartment(departmentData);
+      } catch (error) {
+        console.error("Error loading task data:", error);
+      }
+    };
+    
+    loadTaskData();
+  }, [task]);
   
   const handleEdit = () => {
     openDialog(

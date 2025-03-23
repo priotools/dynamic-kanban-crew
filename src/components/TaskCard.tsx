@@ -1,15 +1,16 @@
 
-import { Department, Task, User } from "@/types";
+import { Task } from "@/types";
 import { cn } from "@/lib/utils";
 import { Calendar, Tag } from "lucide-react";
-import { DragEvent, useState } from "react";
+import { DragEvent, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { getDepartmentById, getUserById } from "@/data/mockData";
 import { useKanban } from "@/context/KanbanContext";
 import { useDialog } from "@/hooks/useDialog";
 import TaskDetailDialog from "./TaskDetailDialog";
+import { getUserById } from "@/services/user.service";
+import { getDepartmentById } from "@/services/department.service";
 
 type TaskCardProps = {
   task: Task;
@@ -32,14 +33,35 @@ const getPriorityColor = (priority: Task["priority"]): string => {
 };
 
 export default function TaskCard({ task, onDragStart }: TaskCardProps) {
-  const [assignee, setAssignee] = useState<User | null>(
-    task.assigneeId ? getUserById(task.assigneeId) || null : null
-  );
-  const [department, setDepartment] = useState<Department | null>(
-    getDepartmentById(task.departmentId) || null
-  );
+  const [assignee, setAssignee] = useState<any | null>(null);
+  const [department, setDepartment] = useState<any | null>(null);
   const { openDialog, DialogComponent } = useDialog();
   const { updateTask, deleteTask } = useKanban();
+
+  useEffect(() => {
+    const loadAssignee = async () => {
+      if (task.assigneeId) {
+        try {
+          const user = await getUserById(task.assigneeId);
+          setAssignee(user);
+        } catch (error) {
+          console.error("Error loading assignee:", error);
+        }
+      }
+    };
+    
+    const loadDepartment = async () => {
+      try {
+        const dept = await getDepartmentById(task.departmentId);
+        setDepartment(dept);
+      } catch (error) {
+        console.error("Error loading department:", error);
+      }
+    };
+    
+    loadAssignee();
+    loadDepartment();
+  }, [task.assigneeId, task.departmentId]);
 
   const handleOpenTaskDetail = () => {
     openDialog(

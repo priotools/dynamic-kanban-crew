@@ -15,7 +15,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create the Supabase client with type safety
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    storage: localStorage
+  }
+});
 
 // Export a helper function to check if Supabase is properly configured
 export const isSupabaseConfigured = (): boolean => {

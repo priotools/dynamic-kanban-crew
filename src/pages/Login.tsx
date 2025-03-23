@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -54,7 +54,7 @@ const Login = () => {
           .limit(5);
         
         if (error) throw error;
-        setTestUsers(data);
+        setTestUsers(data || []);
       } catch (err) {
         console.error("Error fetching test users:", err);
       }

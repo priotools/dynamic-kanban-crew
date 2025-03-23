@@ -1,8 +1,7 @@
 
 import { useKanban } from "@/context/KanbanContext";
 import { useView } from "@/context/ViewContext";
-import { getUserById, mockUsers } from "@/data/mockData";
-import { Task } from "@/types";
+import { Task, User } from "@/types";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,21 +10,55 @@ import TaskList from "./TaskList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { getUsers, getUserById } from "@/services/user.service";
 
 export default function UserView() {
-  const { tasks, isLoading } = useKanban();
+  const { tasks, isLoading: tasksLoading } = useKanban();
   const { selectedUserId, setSelectedUserId } = useView();
   const [userTasks, setUserTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Set initial user if none is selected
+  // Load users
   useEffect(() => {
-    if (!selectedUserId && mockUsers.length > 0) {
-      const firstNonAdmin = mockUsers.find(user => user.role !== "admin")?.id;
-      if (firstNonAdmin) {
-        setSelectedUserId(firstNonAdmin);
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        const usersData = await getUsers();
+        // Filter out admin users
+        const nonAdminUsers = usersData.filter(user => user.role !== "admin");
+        setUsers(nonAdminUsers);
+        
+        // Set initial user if none is selected
+        if (!selectedUserId && nonAdminUsers.length > 0) {
+          setSelectedUserId(nonAdminUsers[0].id);
+        }
+      } catch (error) {
+        console.error("Error loading users:", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+    
+    loadUsers();
   }, [selectedUserId, setSelectedUserId]);
+  
+  // Load current user
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      if (selectedUserId) {
+        try {
+          const user = await getUserById(selectedUserId);
+          setCurrentUser(user);
+        } catch (error) {
+          console.error("Error loading current user:", error);
+        }
+      }
+    };
+    
+    loadCurrentUser();
+  }, [selectedUserId]);
   
   // Update tasks when user changes
   useEffect(() => {
@@ -34,7 +67,7 @@ export default function UserView() {
     }
   }, [selectedUserId, tasks]);
   
-  if (isLoading) {
+  if (isLoading || tasksLoading) {
     return (
       <div className="p-6 animate-fade-in">
         <div className="flex mb-6">
@@ -47,18 +80,12 @@ export default function UserView() {
     );
   }
 
-  const currentUser = selectedUserId 
-    ? getUserById(selectedUserId)
-    : null;
-  
-  const nonAdminUsers = mockUsers.filter(user => user.role !== "admin");
-  
   return (
     <div className="p-6 animate-fade-in">
       <div className="mb-6 flex">
         <ScrollArea className="w-full">
           <div className="flex pb-2">
-            {nonAdminUsers.map(user => (
+            {users.map(user => (
               <button
                 key={user.id}
                 onClick={() => setSelectedUserId(user.id)}

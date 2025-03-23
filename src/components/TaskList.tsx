@@ -1,16 +1,16 @@
 
 import { Task } from "@/types";
-import { getDepartmentById, getUserById } from "@/data/mockData";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
 import { Calendar, ListFilter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useDialog } from "@/hooks/useDialog";
 import TaskDetailDialog from "./TaskDetailDialog";
 import { useKanban } from "@/context/KanbanContext";
+import { getUserById } from "@/services/user.service";
 
 type TaskListProps = {
   tasks: Task[];
@@ -24,6 +24,33 @@ export default function TaskList({ tasks }: TaskListProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const { openDialog, DialogComponent } = useDialog();
   const { updateTask, deleteTask } = useKanban();
+  // Store user data
+  const [userMap, setUserMap] = useState<Record<string, any>>({});
+  
+  // Load all assignees for the tasks
+  useEffect(() => {
+    const loadAssignees = async () => {
+      const assigneeIds = [...new Set(tasks.filter(t => t.assigneeId).map(t => t.assigneeId))];
+      const newUserMap: Record<string, any> = {};
+      
+      for (const id of assigneeIds) {
+        if (id) {
+          try {
+            const user = await getUserById(id);
+            if (user) {
+              newUserMap[id] = user;
+            }
+          } catch (error) {
+            console.error(`Error loading user ${id}:`, error);
+          }
+        }
+      }
+      
+      setUserMap(newUserMap);
+    };
+    
+    loadAssignees();
+  }, [tasks]);
   
   const handleOpenTask = (task: Task) => {
     openDialog(
@@ -134,7 +161,7 @@ export default function TaskList({ tasks }: TaskListProps) {
             </TableHeader>
             <TableBody>
               {sortedTasks.map(task => {
-                const assignee = task.assigneeId ? getUserById(task.assigneeId) : null;
+                const assignee = task.assigneeId ? userMap[task.assigneeId] : null;
                 
                 return (
                   <TableRow 

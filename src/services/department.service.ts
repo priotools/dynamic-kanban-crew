@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Department } from '@/types';
 
 export async function getDepartments(): Promise<Department[]> {
@@ -35,7 +35,7 @@ export async function getDepartmentById(id: string): Promise<Department | null> 
   };
 }
 
-export async function getUsersInDepartment(departmentId: string) {
+export async function getUsersInDepartment(departmentId: string): Promise<User[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -52,3 +52,6 @@ export async function getUsersInDepartment(departmentId: string) {
     departmentId: user.department_id
   }));
 }
+
+// Add the missing User type import
+import { User } from '@/types';

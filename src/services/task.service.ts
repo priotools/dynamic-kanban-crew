@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskStatus } from '@/types';
 
 export async function getTasks(): Promise<Task[]> {

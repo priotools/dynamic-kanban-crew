@@ -1,7 +1,6 @@
 
 import { useKanban } from "@/context/KanbanContext";
 import { useView } from "@/context/ViewContext";
-import { getDepartmentById, getUsersInDepartment, mockDepartments } from "@/data/mockData";
 import { Task, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,29 +9,75 @@ import TaskList from "./TaskList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { getDepartmentById, getDepartments, getUsersInDepartment } from "@/services/department.service";
 
 export default function DepartmentView() {
-  const { tasks, isLoading } = useKanban();
+  const { tasks, isLoading: tasksLoading } = useKanban();
   const { selectedDepartmentId, setSelectedDepartmentId } = useView();
   const [departmentUsers, setDepartmentUsers] = useState<User[]>([]);
   const [departmentTasks, setDepartmentTasks] = useState<Task[]>([]);
+  const [departments, setDepartments] = useState<Array<{id: string, name: string}>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentDepartment, setCurrentDepartment] = useState<{id: string, name: string} | null>(null);
   
-  // Set initial department if none is selected
+  // Load departments
   useEffect(() => {
-    if (!selectedDepartmentId && mockDepartments.length > 0) {
-      setSelectedDepartmentId(mockDepartments[0].id);
-    }
+    const loadDepartments = async () => {
+      try {
+        setIsLoading(true);
+        const depts = await getDepartments();
+        setDepartments(depts.map(d => ({ id: d.id, name: d.name })));
+        
+        // Set initial department if none is selected
+        if (!selectedDepartmentId && depts.length > 0) {
+          setSelectedDepartmentId(depts[0].id);
+        }
+      } catch (error) {
+        console.error("Error loading departments:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDepartments();
   }, [selectedDepartmentId, setSelectedDepartmentId]);
+  
+  // Load current department
+  useEffect(() => {
+    const loadCurrentDepartment = async () => {
+      if (selectedDepartmentId) {
+        try {
+          const dept = await getDepartmentById(selectedDepartmentId);
+          if (dept) {
+            setCurrentDepartment({ id: dept.id, name: dept.name });
+          }
+        } catch (error) {
+          console.error("Error loading current department:", error);
+        }
+      }
+    };
+    
+    loadCurrentDepartment();
+  }, [selectedDepartmentId]);
   
   // Update users and tasks when department changes
   useEffect(() => {
-    if (selectedDepartmentId) {
-      setDepartmentUsers(getUsersInDepartment(selectedDepartmentId));
-      setDepartmentTasks(tasks.filter(task => task.departmentId === selectedDepartmentId));
-    }
+    const loadDepartmentData = async () => {
+      if (selectedDepartmentId) {
+        try {
+          const users = await getUsersInDepartment(selectedDepartmentId);
+          setDepartmentUsers(users);
+          setDepartmentTasks(tasks.filter(task => task.departmentId === selectedDepartmentId));
+        } catch (error) {
+          console.error("Error loading department data:", error);
+        }
+      }
+    };
+    
+    loadDepartmentData();
   }, [selectedDepartmentId, tasks]);
   
-  if (isLoading) {
+  if (isLoading || tasksLoading) {
     return (
       <div className="p-6 animate-fade-in">
         <div className="flex mb-6">
@@ -45,16 +90,12 @@ export default function DepartmentView() {
     );
   }
 
-  const currentDepartment = selectedDepartmentId
-    ? getDepartmentById(selectedDepartmentId)
-    : null;
-  
   return (
     <div className="p-6 animate-fade-in">
       <div className="mb-6 flex">
         <ScrollArea className="w-full">
           <div className="flex pb-2">
-            {mockDepartments.map(dept => (
+            {departments.map(dept => (
               <button
                 key={dept.id}
                 onClick={() => setSelectedDepartmentId(dept.id)}
