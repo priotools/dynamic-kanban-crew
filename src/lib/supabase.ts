@@ -15,7 +15,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create the Supabase client with type safety
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(
+  supabaseUrl || 'https://placeholder-url.supabase.co',  // Fallback URL to prevent runtime errors
+  supabaseAnonKey || 'placeholder-key'  // Fallback key to prevent runtime errors
+);
 
 // Export a helper function to check if Supabase is properly configured
 export const isSupabaseConfigured = (): boolean => {
