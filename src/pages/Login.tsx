@@ -8,9 +8,9 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { mockUsers } from "@/data/mockData";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -20,6 +20,7 @@ const loginSchema = z.object({
 const Login = () => {
   const { login, currentUser, isLoading } = useAuth();
   const [loginLoading, setLoginLoading] = useState(false);
+  const [testUsers, setTestUsers] = useState<{email: string}[]>([]);
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -43,10 +44,24 @@ const Login = () => {
     }
   };
   
-  // List of valid test users from mock data
-  const testUsers = mockUsers.map(user => ({
-    email: user.email,
-  }));
+  // Fetch available test users for development
+  useState(() => {
+    const fetchTestUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('email')
+          .limit(5);
+        
+        if (error) throw error;
+        setTestUsers(data);
+      } catch (err) {
+        console.error("Error fetching test users:", err);
+      }
+    };
+    
+    fetchTestUsers();
+  });
   
   if (currentUser) {
     return <Navigate to="/dashboard" replace />;
@@ -103,27 +118,29 @@ const Login = () => {
           </form>
         </Form>
         
-        <div className="mt-8 border-t pt-6">
-          <p className="text-sm text-center text-muted-foreground mb-3">
-            Test users (use any password)
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {testUsers.map((user, index) => (
-              <Button
-                key={index}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  form.setValue("email", user.email);
-                  form.setValue("password", "password");
-                }}
-              >
-                {user.email}
-              </Button>
-            ))}
+        {testUsers.length > 0 && (
+          <div className="mt-8 border-t pt-6">
+            <p className="text-sm text-center text-muted-foreground mb-3">
+              Test users (use any password)
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {testUsers.map((user, index) => (
+                <Button
+                  key={index}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    form.setValue("email", user.email);
+                    form.setValue("password", "password123");
+                  }}
+                >
+                  {user.email}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

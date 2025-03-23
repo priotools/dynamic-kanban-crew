@@ -1,7 +1,8 @@
 
 import { User } from "@/types";
-import { mockUsers } from "@/data/mockData";
 import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { getUserById } from "@/services/user.service";
 
 type AuthContextType = {
   currentUser: User | null;
@@ -19,12 +20,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is stored in local storage
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Check for current session
+    const checkSession = async () => {
+      setIsLoading(true);
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          const user = await getUserById(session.user.id);
+          if (user) {
+            setCurrentUser(user);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking auth session:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSession();
+    
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const user = await getUserById(session.user.id);
+          if (user) {
+            setCurrentUser(user);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -32,31 +66,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // In a real app, this would be an API call to authenticate
-      const user = mockUsers.find(user => user.email === email);
-      
-      if (user) {
-        setCurrentUser(user);
-        localStorage.setItem("currentUser", JSON.stringify(user));
-        return true;
-      } else {
-        setError("Invalid email or password");
+      if (error) {
+        setError(error.message);
         return false;
       }
-    } catch (err) {
-      setError("Authentication failed");
+      
+      if (data.user) {
+        const user = await getUserById(data.user.id);
+        if (user) {
+          setCurrentUser(user);
+          return true;
+        }
+      }
+      
+      setError("Unable to retrieve user profile");
+      return false;
+    } catch (err: any) {
+      setError(err.message || "Authentication failed");
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("currentUser");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+    } catch (err) {
+      console.error("Error signing out:", err);
+    }
   };
 
   return (

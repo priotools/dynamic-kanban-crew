@@ -11,9 +11,9 @@ interface TaskTimestampsProps {
 export function TaskTimestamps({ createdAt, updatedAt, creator }: TaskTimestampsProps) {
   return (
     <div className="border-t pt-4 text-xs text-gray-500">
-      <p>Created {format(new Date(createdAt), "MMMM d, yyyy")} {creator ? `by ${creator.name}` : ''}</p>
+      <p>Created {format(new Date(createdAt), "MMMM d, yyyy 'at' h:mm a")} {creator ? `by ${creator.name}` : ''}</p>
       {updatedAt && (
-        <p>Updated {format(new Date(updatedAt), "MMMM d, yyyy")}</p>
+        <p>Updated {format(new Date(updatedAt), "MMMM d, yyyy 'at' h:mm a")}</p>
       )}
     </div>
   );

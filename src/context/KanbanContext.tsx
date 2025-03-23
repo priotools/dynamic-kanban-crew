@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { Task, TaskStatus, KanbanColumn } from "@/types";
-import { getTasksByStatus, mockTasks } from "@/data/mockData";
+import { getTasks, getTasksByStatus, addTask as addTaskService, updateTask as updateTaskService, deleteTask as deleteTaskService, moveTask as moveTaskService } from "@/services/task.service";
 import { toast } from "sonner";
 
 type KanbanContextType = {
@@ -30,23 +30,31 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize tasks and columns
-    setIsLoading(true);
+    // Fetch tasks from Supabase
+    const fetchTasks = async () => {
+      setIsLoading(true);
+      
+      try {
+        const fetchedTasks = await getTasks();
+        setTasks(fetchedTasks);
+        
+        const tasksByStatus = await getTasksByStatus();
+        const initialColumns = kanbanStatuses.map(status => ({
+          id: status.id,
+          title: status.title,
+          tasks: tasksByStatus[status.id] || []
+        }));
+        
+        setColumns(initialColumns);
+      } catch (err) {
+        console.error("Error loading tasks:", err);
+        toast.error("Failed to load tasks");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Simulate API call
-    setTimeout(() => {
-      setTasks(mockTasks);
-      
-      const tasksByStatus = getTasksByStatus();
-      const initialColumns = kanbanStatuses.map(status => ({
-        id: status.id,
-        title: status.title,
-        tasks: tasksByStatus[status.id] || []
-      }));
-      
-      setColumns(initialColumns);
-      setIsLoading(false);
-    }, 600);
+    fetchTasks();
   }, []);
 
   // Update columns whenever tasks change
@@ -70,44 +78,62 @@ export function KanbanProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tasks]);
 
-  const moveTask = (taskId: string, newStatus: TaskStatus) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId 
-          ? { ...task, status: newStatus, updatedAt: new Date().toISOString() } 
-          : task
-      )
-    );
-    
-    toast.success("Task moved successfully");
+  const moveTask = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      const updatedTask = await moveTaskService(taskId, newStatus);
+      
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? updatedTask : task
+        )
+      );
+      
+      toast.success("Task moved successfully");
+    } catch (err) {
+      console.error("Error moving task:", err);
+      toast.error("Failed to move task");
+    }
   };
 
-  const updateTask = (updatedTask: Task) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === updatedTask.id 
-          ? { ...updatedTask, updatedAt: new Date().toISOString() } 
-          : task
-      )
-    );
-    
-    toast.success("Task updated successfully");
+  const updateTask = async (updatedTask: Task) => {
+    try {
+      const result = await updateTaskService(updatedTask);
+      
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === updatedTask.id ? result : task
+        )
+      );
+      
+      toast.success("Task updated successfully");
+    } catch (err) {
+      console.error("Error updating task:", err);
+      toast.error("Failed to update task");
+    }
   };
 
-  const addTask = (task: Omit<Task, "id" | "createdAt">) => {
-    const newTask: Task = {
-      ...task,
-      id: `task-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    
-    setTasks(prevTasks => [...prevTasks, newTask]);
-    toast.success("Task added successfully");
+  const addTask = async (task: Omit<Task, "id" | "createdAt">) => {
+    try {
+      const newTask = await addTaskService(task);
+      
+      setTasks(prevTasks => [...prevTasks, newTask]);
+      toast.success("Task added successfully");
+    } catch (err) {
+      console.error("Error adding task:", err);
+      toast.error("Failed to add task");
+    }
   };
 
-  const deleteTask = (taskId: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-    toast.success("Task deleted successfully");
+  const deleteTask = async (taskId: string) => {
+    try {
+      await deleteTaskService(taskId);
+      
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      toast.success("Task deleted successfully");
+    } catch (err) {
+      console.error("Error deleting task:", err);
+      toast.error("Failed to delete task");
+    }
   };
 
   return (
