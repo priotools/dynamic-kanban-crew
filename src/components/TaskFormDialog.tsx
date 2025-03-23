@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -61,10 +60,14 @@ export default function TaskFormDialog({
       : undefined;
     
     onSubmit({
-      ...values,
-      tags: processedTags,
-      // Convert Date object to ISO string for the API
+      title: values.title,
+      description: values.description,
+      status: values.status,
+      priority: values.priority,
+      assigneeId: values.assigneeId,
+      departmentId: values.departmentId,
       dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
+      tags: processedTags,
     });
   };
 
@@ -191,7 +194,7 @@ export default function TaskFormDialog({
                   <FormLabel>Assignee</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    defaultValue={field.value}
+                    defaultValue={field.value || "unassigned"}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -199,7 +202,7 @@ export default function TaskFormDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {mockUsers
                         .filter(user => user.role !== "admin")
                         .map(user => (
