@@ -22,31 +22,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isSupabaseReady] = useState<boolean>(isSupabaseConfigured());
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        setIsLoading(true);
-        const { data } = await supabase.auth.getSession();
-        
-        if (data.session?.user) {
-          try {
-            const user = await getUserById(data.session.user.id);
-            setCurrentUser(user);
-          } catch (error) {
-            console.error('Error fetching user details:', error);
-            // Don't throw error here, just log it
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching current user:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCurrentUser();
-
-    // Set up the auth state change listener
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
@@ -64,8 +41,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // THEN check for existing session
+    const fetchCurrentUser = async () => {
+      try {
+        setIsLoading(true);
+        const { data } = await supabase.auth.getSession();
+        
+        if (data.session?.user) {
+          try {
+            const user = await getUserById(data.session.user.id);
+            setCurrentUser(user);
+          } catch (error) {
+            console.error('Error fetching user details:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
+
     return () => {
-      data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 

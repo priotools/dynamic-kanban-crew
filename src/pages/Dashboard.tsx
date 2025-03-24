@@ -1,18 +1,21 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
 import { KanbanProvider } from "@/context/KanbanContext";
 import { ViewProvider } from "@/context/ViewContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 const Dashboard = () => {
   const { currentUser, isLoading, isSupabaseReady } = useAuth();
   
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
   
   if (!currentUser) {
