@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Department, User, UserRole } from '@/types';
 
 export async function getDepartments(): Promise<Department[]> {
@@ -55,6 +55,5 @@ export async function getUsersByDepartment(departmentId: string): Promise<User[]
   }));
 }
 
-// Add the missing export function that's being imported in DepartmentView.tsx
+// Explicitly export getUsersInDepartment as an alias for getUsersByDepartment
 export const getUsersInDepartment = getUsersByDepartment;
-

@@ -12,7 +12,14 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => {
   return (

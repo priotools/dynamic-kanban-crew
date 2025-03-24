@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { getUserById } from '@/services/user.service';
 import { toast } from 'sonner';
