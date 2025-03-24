@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useView } from "@/context/ViewContext";
@@ -15,6 +14,7 @@ import { useKanban } from "@/context/KanbanContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Link } from "react-router-dom";
 
 export default function DashboardLayout() {
   const { currentUser, logout } = useAuth();
@@ -24,7 +24,6 @@ export default function DashboardLayout() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   
-  // Update sidebar state when screen size changes
   useEffect(() => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
@@ -45,7 +44,6 @@ export default function DashboardLayout() {
   
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
       <aside 
         className={cn(
           "bg-white border-r w-64 flex flex-col transition-all duration-300 ease-in-out fixed inset-y-0 z-30 lg:relative",
@@ -122,16 +120,18 @@ export default function DashboardLayout() {
           </div>
           
           <div className={cn("px-3", !sidebarOpen && "flex justify-center")}>
-            <Button
-              variant="ghost"
-              className={cn("w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50", 
-                !sidebarOpen && "justify-center px-0"
-              )}
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {sidebarOpen && <span>Logout</span>}
-            </Button>
+            <Link to="/logout" className="w-full">
+              <Button
+                variant="ghost"
+                className={cn("w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50", 
+                  !sidebarOpen && "justify-center px-0"
+                )}
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {sidebarOpen && <span>Logout</span>}
+              </Button>
+            </Link>
           </div>
         </div>
         
@@ -157,7 +157,6 @@ export default function DashboardLayout() {
         )}
       </aside>
       
-      {/* Main content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="h-16 border-b bg-white flex items-center px-4 lg:px-6 sticky top-0 z-20">
           {!sidebarOpen && (

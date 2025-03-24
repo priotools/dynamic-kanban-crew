@@ -19,7 +19,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storage: localStorage
+    storage: localStorage,
+    storageKey: 'supabase.auth.token',
+    detectSessionInUrl: true, // Enables detecting tokens in URL for OAuth login
+    flowType: 'pkce', // Use PKCE flow for more secure authentication
   }
 });
 
