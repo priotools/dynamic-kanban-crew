@@ -28,8 +28,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data } = await supabase.auth.getSession();
         
         if (data.session?.user) {
-          const user = await getUserById(data.session.user.id);
-          setCurrentUser(user);
+          try {
+            const user = await getUserById(data.session.user.id);
+            setCurrentUser(user);
+          } catch (error) {
+            console.error('Error fetching user details:', error);
+            // Don't throw error here, just log it
+          }
         }
       } catch (error) {
         console.error('Error fetching current user:', error);
@@ -40,13 +45,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchCurrentUser();
 
+    // Set up the auth state change listener
     const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session?.user) {
+        setIsLoading(true);
         try {
           const user = await getUserById(session.user.id);
           setCurrentUser(user);
         } catch (error) {
           console.error('Error fetching user after sign in:', error);
+        } finally {
+          setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
@@ -71,9 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        const user = await getUserById(data.user.id);
-        setCurrentUser(user);
-        toast.success("Logged in successfully");
+        try {
+          const user = await getUserById(data.user.id);
+          setCurrentUser(user);
+          toast.success("Logged in successfully");
+        } catch (userError) {
+          console.error('Error fetching user after login:', userError);
+          toast.error("Logged in but couldn't fetch user profile");
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -89,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       await supabase.auth.signOut();
       setCurrentUser(null);
+      toast.success("Logged out successfully");
     } catch (error) {
       console.error('Logout error:', error);
       toast.error("Failed to log out");

@@ -1,7 +1,4 @@
 
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/supabase';
-
 // Default to empty strings if environment variables are not defined
 // In production, these should be properly set
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qpovabdidmnzxqexxbxe.supabase.co';
@@ -13,6 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'Supabase URL and Anon Key are required. Please set the VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.'
   );
 }
+
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 
 // Create the Supabase client with type safety
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {

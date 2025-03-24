@@ -8,17 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { login, isLoading, currentUser } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   React.useEffect(() => {
     if (currentUser) {
+      console.log("User is logged in, redirecting to dashboard");
       navigate("/dashboard");
     }
   }, [currentUser, navigate]);
@@ -32,18 +35,20 @@ const Login = () => {
     }
     
     try {
+      setError(null);
       setIsLoggingIn(true);
       await login(email, password);
+      console.log("Login successful, redirecting to dashboard");
       navigate("/dashboard");
-    } catch (error) {
-      // Error is already handled in the login function
+    } catch (error: any) {
       console.error("Login failed:", error);
+      setError(error.message || "Failed to login. Please check your credentials and try again.");
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !isLoggingIn) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -60,6 +65,13 @@ const Login = () => {
             Login to access your dashboard
           </CardDescription>
         </CardHeader>
+        {error && (
+          <div className="px-6">
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -87,6 +99,11 @@ const Login = () => {
                 autoComplete="current-password"
                 disabled={isLoggingIn}
               />
+            </div>
+            <div className="text-sm text-gray-500">
+              <p>Demo credentials (if configured):</p>
+              <p>Email: demo@example.com</p>
+              <p>Password: password123</p>
             </div>
           </CardContent>
           <CardFooter>

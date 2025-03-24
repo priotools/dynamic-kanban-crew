@@ -54,3 +54,7 @@ export async function getUsersByDepartment(departmentId: string): Promise<User[]
     departmentId: user.department_id
   }));
 }
+
+// Add the missing export function that's being imported in DepartmentView.tsx
+export const getUsersInDepartment = getUsersByDepartment;
+
