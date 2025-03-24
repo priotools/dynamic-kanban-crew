@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Department } from '@/types';
+import { Department, User } from '@/types';
 
 export async function getDepartments(): Promise<Department[]> {
   const { data, error } = await supabase
@@ -12,7 +12,8 @@ export async function getDepartments(): Promise<Department[]> {
   return data.map(dept => ({
     id: dept.id,
     name: dept.name,
-    headId: dept.head_id || null
+    headId: dept.head_id,
+    createdAt: dept.created_at
   }));
 }
 
@@ -31,11 +32,12 @@ export async function getDepartmentById(id: string): Promise<Department | null> 
   return {
     id: data.id,
     name: data.name,
-    headId: data.head_id || null
+    headId: data.head_id,
+    createdAt: data.created_at
   };
 }
 
-export async function getUsersInDepartment(departmentId: string): Promise<User[]> {
+export async function getUsersByDepartment(departmentId: string): Promise<User[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -48,10 +50,7 @@ export async function getUsersInDepartment(departmentId: string): Promise<User[]
     name: user.name,
     email: user.email,
     avatar: user.avatar_url,
-    role: user.role,
+    role: user.role as UserRole, // Cast the string to UserRole enum
     departmentId: user.department_id
   }));
 }
-
-// Add the missing User type import
-import { User } from '@/types';

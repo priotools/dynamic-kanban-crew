@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase
@@ -14,7 +14,7 @@ export async function getUsers(): Promise<User[]> {
     name: user.name,
     email: user.email,
     avatar: user.avatar_url,
-    role: user.role as any,
+    role: user.role as UserRole, // Cast the string to UserRole enum
     departmentId: user.department_id
   }));
 }
@@ -36,7 +36,7 @@ export async function getUserById(id: string): Promise<User | null> {
     name: data.name,
     email: data.email,
     avatar: data.avatar_url,
-    role: data.role as any,
+    role: data.role as UserRole, // Cast the string to UserRole enum
     departmentId: data.department_id
   };
 }

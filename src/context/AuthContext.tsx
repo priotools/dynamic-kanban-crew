@@ -1,134 +1,115 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { getUserById } from '@/services/user.service';
+import { toast } from 'sonner';
 
-type AuthContextType = {
+interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
   isSupabaseReady: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSupabaseReady] = useState(isSupabaseConfigured());
+  const [isSupabaseReady] = useState<boolean>(isSupabaseConfigured());
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchCurrentUser = async () => {
       try {
         setIsLoading(true);
+        const { data } = await supabase.auth.getSession();
         
-        // Get the current session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          // Fetch the user profile from our profiles table
-          try {
-            const user = await getUserById(session.user.id);
-            setCurrentUser(user);
-          } catch (error) {
-            console.error("Error fetching user profile:", error);
-            // If we can't fetch the profile, at least set basic user info
-            setCurrentUser({
-              id: session.user.id,
-              name: session.user.email?.split('@')[0] || 'User',
-              email: session.user.email || '',
-              avatar: session.user.user_metadata.avatar_url,
-              role: 'employee',
-            });
-          }
-        } else {
-          setCurrentUser(null);
+        if (data.session?.user) {
+          const user = await getUserById(data.session.user.id);
+          setCurrentUser(user);
         }
       } catch (error) {
-        console.error("Error checking auth state:", error);
-        setCurrentUser(null);
+        console.error('Error fetching current user:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUser();
+    fetchCurrentUser();
 
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          try {
-            const user = await getUserById(session.user.id);
-            setCurrentUser(user);
-          } catch (error) {
-            console.error("Error fetching user profile on auth change:", error);
-            setCurrentUser({
-              id: session.user.id,
-              name: session.user.email?.split('@')[0] || 'User',
-              email: session.user.email || '',
-              avatar: session.user.user_metadata.avatar_url,
-              role: 'employee',
-            });
-          }
-        } else {
-          setCurrentUser(null);
+    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          const user = await getUserById(session.user.id);
+          setCurrentUser(user);
+        } catch (error) {
+          console.error('Error fetching user after sign in:', error);
         }
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
       }
-    );
+    });
 
     return () => {
-      subscription.unsubscribe();
+      data.subscription.unsubscribe();
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error("Login error:", error.message);
-        return false;
+        throw error;
       }
 
       if (data.user) {
-        // User is already set by the auth listener
+        const user = await getUserById(data.user.id);
+        setCurrentUser(user);
         toast.success("Logged in successfully");
-        return true;
       }
-      
-      return false;
-    } catch (error) {
-      console.error("Login error:", error);
-      return false;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || "Login failed");
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
+      setIsLoading(true);
       await supabase.auth.signOut();
       setCurrentUser(null);
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error('Logout error:', error);
+      toast.error("Failed to log out");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const value = {
-    currentUser,
-    isLoading,
-    isSupabaseReady,
-    login,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        isLoading,
+        isSupabaseReady,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = (): AuthContextType => {

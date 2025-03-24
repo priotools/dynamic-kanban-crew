@@ -1,147 +1,108 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Navigate } from "react-router-dom";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
-});
 
 const Login = () => {
-  const { login, currentUser, isLoading } = useAuth();
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [testUsers, setTestUsers] = useState<{email: string}[]>([]);
-  
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-  
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
-    setLoginLoading(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { login, isLoading, currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (currentUser) {
+      navigate("/dashboard");
+    }
+  }, [currentUser, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please enter both email and password");
+      return;
+    }
+    
     try {
-      const success = await login(values.email, values.password);
-      if (!success) {
-        toast.error("Invalid email or password");
-      }
+      setIsLoggingIn(true);
+      await login(email, password);
+      navigate("/dashboard");
     } catch (error) {
-      toast.error("An error occurred during login");
+      // Error is already handled in the login function
+      console.error("Login failed:", error);
     } finally {
-      setLoginLoading(false);
+      setIsLoggingIn(false);
     }
   };
-  
-  // Fetch available test users for development
-  useState(() => {
-    const fetchTestUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('email')
-          .limit(5);
-        
-        if (error) throw error;
-        setTestUsers(data || []);
-      } catch (err) {
-        console.error("Error fetching test users:", err);
-      }
-    };
-    
-    fetchTestUsers();
-  });
-  
-  if (currentUser) {
-    return <Navigate to="/dashboard" replace />;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
-  
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-sm border p-8 animate-fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold mb-2">Kanban Board</h1>
-          <p className="text-muted-foreground">Log in to manage your tasks</p>
-        </div>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="your@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <Button type="submit" className="w-full" disabled={loginLoading}>
-              {loginLoading ? (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
+          <CardDescription className="text-center">
+            Login to access your dashboard
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={isLoggingIn}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={isLoggingIn}
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" type="submit" disabled={isLoggingIn}>
+              {isLoggingIn ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Logging in...
                 </>
               ) : (
-                "Log in"
+                "Login"
               )}
             </Button>
-          </form>
-        </Form>
-        
-        {testUsers.length > 0 && (
-          <div className="mt-8 border-t pt-6">
-            <p className="text-sm text-center text-muted-foreground mb-3">
-              Test users (use any password)
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {testUsers.map((user, index) => (
-                <Button
-                  key={index}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    form.setValue("email", user.email);
-                    form.setValue("password", "password123");
-                  }}
-                >
-                  {user.email}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 };

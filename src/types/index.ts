@@ -1,5 +1,7 @@
 
-export type UserRole = 'admin' | 'department_head' | 'employee';
+export type TaskStatus = "backlog" | "todo" | "in_progress" | "in_review" | "done";
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type UserRole = "admin" | "manager" | "employee";
 
 export interface User {
   id: string;
@@ -14,10 +16,8 @@ export interface Department {
   id: string;
   name: string;
   headId?: string;
+  createdAt?: string;
 }
-
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
 
 export interface Task {
   id: string;
@@ -29,9 +29,9 @@ export interface Task {
   createdBy: string;
   departmentId: string;
   dueDate?: string;
+  tags?: string[];
   createdAt: string;
   updatedAt?: string;
-  tags?: string[];
 }
 
 export interface KanbanColumn {
