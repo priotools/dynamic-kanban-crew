@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Department, User } from '@/types';
+import { Department, User, UserRole } from '@/types';
 
 export async function getDepartments(): Promise<Department[]> {
   const { data, error } = await supabase

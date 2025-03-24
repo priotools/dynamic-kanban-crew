@@ -1,4 +1,3 @@
-
 import { useKanban } from "@/context/KanbanContext";
 import { useView } from "@/context/ViewContext";
 import { Task, User } from "@/types";
@@ -9,7 +8,7 @@ import TaskList from "./TaskList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { getDepartmentById, getDepartments, getUsersInDepartment } from "@/services/department.service";
+import { getDepartmentById, getDepartments, getUsersByDepartment } from "@/services/department.service";
 
 export default function DepartmentView() {
   const { tasks, isLoading: tasksLoading } = useKanban();
@@ -20,7 +19,6 @@ export default function DepartmentView() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentDepartment, setCurrentDepartment] = useState<{id: string, name: string} | null>(null);
   
-  // Load departments
   useEffect(() => {
     const loadDepartments = async () => {
       try {
@@ -28,7 +26,6 @@ export default function DepartmentView() {
         const depts = await getDepartments();
         setDepartments(depts.map(d => ({ id: d.id, name: d.name })));
         
-        // Set initial department if none is selected
         if (!selectedDepartmentId && depts.length > 0) {
           setSelectedDepartmentId(depts[0].id);
         }
@@ -42,7 +39,6 @@ export default function DepartmentView() {
     loadDepartments();
   }, [selectedDepartmentId, setSelectedDepartmentId]);
   
-  // Load current department
   useEffect(() => {
     const loadCurrentDepartment = async () => {
       if (selectedDepartmentId) {
@@ -60,12 +56,11 @@ export default function DepartmentView() {
     loadCurrentDepartment();
   }, [selectedDepartmentId]);
   
-  // Update users and tasks when department changes
   useEffect(() => {
     const loadDepartmentData = async () => {
       if (selectedDepartmentId) {
         try {
-          const users = await getUsersInDepartment(selectedDepartmentId);
+          const users = await getUsersByDepartment(selectedDepartmentId);
           setDepartmentUsers(users);
           setDepartmentTasks(tasks.filter(task => task.departmentId === selectedDepartmentId));
         } catch (error) {
@@ -146,7 +141,7 @@ export default function DepartmentView() {
                     </Avatar>
                     <div>
                       <h4 className="font-medium text-sm">{user.name}</h4>
-                      <p className="text-xs text-muted-foreground">{user.role === "department_head" ? "Department Head" : "Team Member"}</p>
+                      <p className="text-xs text-muted-foreground">{user.role === "manager" ? "Department Head" : "Team Member"}</p>
                     </div>
                   </div>
                 ))}

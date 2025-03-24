@@ -1,4 +1,3 @@
-
 import { useKanban } from "@/context/KanbanContext";
 import { useView } from "@/context/ViewContext";
 import { Task, User } from "@/types";
@@ -20,17 +19,14 @@ export default function UserView() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Load users
   useEffect(() => {
     const loadUsers = async () => {
       try {
         setIsLoading(true);
         const usersData = await getUsers();
-        // Filter out admin users
         const nonAdminUsers = usersData.filter(user => user.role !== "admin");
         setUsers(nonAdminUsers);
         
-        // Set initial user if none is selected
         if (!selectedUserId && nonAdminUsers.length > 0) {
           setSelectedUserId(nonAdminUsers[0].id);
         }
@@ -44,7 +40,6 @@ export default function UserView() {
     loadUsers();
   }, [selectedUserId, setSelectedUserId]);
   
-  // Load current user
   useEffect(() => {
     const loadCurrentUser = async () => {
       if (selectedUserId) {
@@ -60,7 +55,6 @@ export default function UserView() {
     loadCurrentUser();
   }, [selectedUserId]);
   
-  // Update tasks when user changes
   useEffect(() => {
     if (selectedUserId) {
       setUserTasks(tasks.filter(task => task.assigneeId === selectedUserId));
@@ -121,7 +115,7 @@ export default function UserView() {
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-semibold">{currentUser.name}</h2>
                 <Badge variant="outline" className="bg-blue-50 text-blue-600">
-                  {currentUser.role === "department_head" ? "Department Head" : "Team Member"}
+                  {currentUser.role === "manager" ? "Department Head" : "Team Member"}
                 </Badge>
               </div>
               <p className="text-muted-foreground">{currentUser.email}</p>

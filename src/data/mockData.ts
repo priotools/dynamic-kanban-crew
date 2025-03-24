@@ -1,4 +1,3 @@
-
 import { Department, Task, TaskStatus, User } from "@/types";
 
 export const mockUsers: User[] = [
@@ -14,7 +13,7 @@ export const mockUsers: User[] = [
     name: "Sarah Miller",
     email: "sarah@example.com",
     avatar: "/avatars/avatar-2.jpg",
-    role: "department_head",
+    role: "manager",
     departmentId: "dept-1",
   },
   {
@@ -22,7 +21,7 @@ export const mockUsers: User[] = [
     name: "James Wilson",
     email: "james@example.com",
     avatar: "/avatars/avatar-3.jpg",
-    role: "department_head",
+    role: "manager",
     departmentId: "dept-2",
   },
   {
