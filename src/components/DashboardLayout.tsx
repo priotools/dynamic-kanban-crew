@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import KanbanBoard from "./KanbanBoard";
 import DepartmentView from "./DepartmentView";
 import UserView from "./UserView";
-import { Layers, Users, User2, PlusCircle, LayoutGrid, LogOut } from "lucide-react";
+import { Layers, Users, User2, PlusCircle, LayoutGrid, LogOut, ShieldCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import TaskFormDialog from "./TaskFormDialog";
 import { useKanban } from "@/context/KanbanContext";
@@ -116,6 +116,18 @@ export default function DashboardLayout() {
                 <User2 className="h-4 w-4 mr-2" />
                 {sidebarOpen && <span>Team Members</span>}
               </Button>
+
+              {currentUser && currentUser.role === "admin" && (
+                <Link to="/admin" className="w-full">
+                  <Button
+                    variant="ghost"
+                    className={cn("w-full justify-start mt-2", !sidebarOpen && "justify-center px-0")}
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    {sidebarOpen && <span>Admin</span>}
+                  </Button>
+                </Link>
+              )}
             </nav>
           </div>
           
