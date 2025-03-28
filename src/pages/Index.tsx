@@ -12,11 +12,16 @@ const Index = () => {
   const [attemptedNavigation, setAttemptedNavigation] = useState(false);
   
   useEffect(() => {
+    console.log('Index page - Auth state:', { isLoading, currentUser: !!currentUser });
+    
+    // Only attempt navigation when auth state is known (not loading)
     if (!isLoading) {
       setAttemptedNavigation(true);
       if (currentUser) {
+        console.log('Redirecting to dashboard');
         navigate("/dashboard", { replace: true });
       } else {
+        console.log('Redirecting to login');
         navigate("/login", { replace: true });
       }
     }
@@ -28,7 +33,7 @@ const Index = () => {
     if (isLoading) {
       timeout = window.setTimeout(() => {
         setAttemptedNavigation(true);
-      }, 3000);
+      }, 2000);
     }
     
     return () => {
@@ -50,33 +55,29 @@ const Index = () => {
   }
   
   // If loading takes too long, provide manual navigation options
-  if ((isLoading && attemptedNavigation) || attemptedNavigation) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-semibold mb-6">Welcome to Kanban Board</h1>
-        <div className="space-y-4">
-          <Button 
-            className="w-full" 
-            onClick={() => navigate("/dashboard")}
-            disabled={isLoading}
-          >
-            Go to Dashboard
-          </Button>
-          <Button 
-            className="w-full" 
-            variant="outline" 
-            onClick={() => navigate("/login")}
-            disabled={isLoading}
-          >
-            Login
-          </Button>
-          {isLoading && <p className="text-sm text-muted-foreground text-center">Still loading, please wait...</p>}
-        </div>
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <h1 className="text-2xl font-semibold mb-6">Welcome to Kanban Board</h1>
+      <div className="space-y-4">
+        <Button 
+          className="w-full" 
+          onClick={() => navigate("/dashboard")}
+          disabled={isLoading}
+        >
+          Go to Dashboard
+        </Button>
+        <Button 
+          className="w-full" 
+          variant="outline" 
+          onClick={() => navigate("/login")}
+          disabled={isLoading}
+        >
+          Login
+        </Button>
+        {isLoading && <p className="text-sm text-muted-foreground text-center">Still loading, please wait...</p>}
       </div>
-    );
-  }
-  
-  return null; // The useEffect will handle the redirects
+    </div>
+  );
 };
 
 export default Index;

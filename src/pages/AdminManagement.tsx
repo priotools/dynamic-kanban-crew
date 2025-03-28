@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
-import UsersManagement from "@/components/admin/UsersManagement";
+import UserManagement from "@/components/admin/UserManagement";
 import DepartmentsManagement from "@/components/admin/DepartmentsManagement";
 import UserDepartmentMapping from "@/components/admin/UserDepartmentMapping";
 
@@ -15,6 +15,8 @@ const AdminManagement = () => {
   const [activeTab, setActiveTab] = useState("users");
   
   useEffect(() => {
+    console.log('AdminManagement - Auth state:', { isLoading, currentUser });
+    
     if (!isLoading && !currentUser) {
       navigate("/login", { replace: true });
     } else if (!isLoading && currentUser && currentUser.role !== "admin") {
@@ -69,7 +71,7 @@ const AdminManagement = () => {
           </TabsList>
           
           <TabsContent value="users" className="animate-fade-in">
-            <UsersManagement />
+            <UserManagement />
           </TabsContent>
           
           <TabsContent value="departments" className="animate-fade-in">

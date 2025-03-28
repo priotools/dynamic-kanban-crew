@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { getUserById } from '@/services/user.service';
 import { toast } from 'sonner';
@@ -23,6 +22,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
+    console.log('Auth provider initialized');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
@@ -31,16 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const user = await getUserById(session.user.id);
           setCurrentUser(user);
-          setIsLoading(false);
         } catch (error) {
           console.error('Error fetching user after sign in:', error);
+        } finally {
           setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
         setIsLoading(false);
       } else if (event === 'TOKEN_REFRESHED') {
-        // Session was refreshed, no need to re-fetch the user if we already have it
         if (!currentUser && session?.user) {
           try {
             const user = await getUserById(session.user.id);
@@ -59,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // THEN check for existing session
     const fetchCurrentUser = async () => {
       try {
+        console.log('Checking for existing session');
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -69,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         if (data.session?.user) {
+          console.log('Found existing session for user:', data.session.user.id);
           try {
             const user = await getUserById(data.session.user.id);
             setCurrentUser(user);
