@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { KanbanProvider } from "@/context/KanbanContext";
@@ -12,10 +12,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 const Dashboard = () => {
   const { currentUser, isLoading, isSupabaseReady } = useAuth();
   const navigate = useNavigate();
+  const [redirecting, setRedirecting] = useState(false);
   
   useEffect(() => {
     // If authentication check is complete and user is not logged in, redirect to login
     if (!isLoading && !currentUser) {
+      setRedirecting(true);
       navigate("/login", { replace: true });
     }
   }, [isLoading, currentUser, navigate]);
@@ -34,6 +36,21 @@ const Dashboard = () => {
           </div>
           <Skeleton className="h-64 w-full" />
         </div>
+      </div>
+    );
+  }
+  
+  if (!currentUser && !redirecting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-lg text-center">Authentication required. Redirecting to login...</p>
+        <button 
+          onClick={() => navigate("/login")}
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
+        >
+          Go to Login
+        </button>
       </div>
     );
   }

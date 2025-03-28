@@ -22,7 +22,7 @@ const Login = () => {
   useEffect(() => {
     if (currentUser) {
       console.log("User is logged in, redirecting to dashboard");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   }, [currentUser, navigate]);
 
@@ -39,7 +39,7 @@ const Login = () => {
       setIsLoggingIn(true);
       await login(email, password);
       console.log("Login successful, redirecting to dashboard");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       console.error("Login failed:", error);
       setError(error.message || "Failed to login. Please check your credentials and try again.");
