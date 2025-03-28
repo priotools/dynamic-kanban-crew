@@ -2,6 +2,26 @@
 import { supabase } from '@/lib/supabase';
 import { User, UserRole, Department } from '@/types';
 
+export async function getDepartments(): Promise<Department[]> {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*');
+    
+    if (error) throw error;
+    
+    return data.map(dept => ({
+      id: dept.id,
+      name: dept.name,
+      headId: dept.head_id,
+      createdAt: dept.created_at
+    }));
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    throw error;
+  }
+}
+
 export async function createDepartment(data: { name: string }): Promise<Department> {
   try {
     const { data: department, error } = await supabase
