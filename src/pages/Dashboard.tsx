@@ -1,28 +1,43 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { KanbanProvider } from "@/context/KanbanContext";
 import { ViewProvider } from "@/context/ViewContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const { currentUser, isLoading, isSupabaseReady } = useAuth();
   const navigate = useNavigate();
-  const [redirecting, setRedirecting] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
   
   useEffect(() => {
+    let redirectTimeout: number;
+    
     // If authentication check is complete and user is not logged in, redirect to login
-    if (!isLoading && !currentUser) {
-      setRedirecting(true);
-      navigate("/login", { replace: true });
+    if (!isLoading) {
+      if (!currentUser && !redirectAttempted) {
+        console.log("User not authenticated, redirecting to login");
+        setRedirectAttempted(true);
+        navigate("/login", { replace: true });
+      }
+    } else if (!redirectAttempted) {
+      // Set a timeout to show manual login button if loading takes too long
+      redirectTimeout = window.setTimeout(() => {
+        setRedirectAttempted(true);
+      }, 3000);
     }
-  }, [isLoading, currentUser, navigate]);
+    
+    return () => {
+      if (redirectTimeout) window.clearTimeout(redirectTimeout);
+    };
+  }, [isLoading, currentUser, navigate, redirectAttempted]);
   
-  if (isLoading) {
+  if (isLoading && !redirectAttempted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -40,17 +55,17 @@ const Dashboard = () => {
     );
   }
   
-  if (!currentUser && !redirecting) {
+  if (redirectAttempted && !currentUser) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <p className="text-lg text-center">Authentication required. Redirecting to login...</p>
-        <button 
+        <p className="text-lg text-center mb-4">Authentication required to access the dashboard</p>
+        <Button 
           onClick={() => navigate("/login")}
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
+          size="lg"
         >
           Go to Login
-        </button>
+        </Button>
       </div>
     );
   }

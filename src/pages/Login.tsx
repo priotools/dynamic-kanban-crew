@@ -20,11 +20,11 @@ const Login = () => {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !isLoggingIn) {
       console.log("User is logged in, redirecting to dashboard");
       navigate("/dashboard", { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, isLoggingIn]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +38,8 @@ const Login = () => {
       setError(null);
       setIsLoggingIn(true);
       await login(email, password);
-      console.log("Login successful, redirecting to dashboard");
-      navigate("/dashboard", { replace: true });
+      
+      // Successful login should trigger redirect via the useEffect
     } catch (error: any) {
       console.error("Login failed:", error);
       setError(error.message || "Failed to login. Please check your credentials and try again.");
@@ -48,6 +48,7 @@ const Login = () => {
     }
   };
 
+  // Show loading state only during initial auth check, not during login attempt
   if (isLoading && !isLoggingIn) {
     return (
       <div className="flex items-center justify-center min-h-screen">

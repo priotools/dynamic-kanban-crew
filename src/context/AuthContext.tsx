@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,42 +25,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('Auth provider initialized');
     
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        try {
-          const user = await getUserById(session.user.id);
-          setCurrentUser(user);
-        } catch (error) {
-          console.error('Error fetching user after sign in:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        setIsLoading(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        if (!currentUser && session?.user) {
-          try {
-            const user = await getUserById(session.user.id);
-            setCurrentUser(user);
-          } catch (error) {
-            console.error('Error fetching user after token refresh:', error);
-          } finally {
+    // Clear any previous state
+    const initializeAuth = async () => {
+      try {
+        // Set up auth state listener FIRST to avoid missing events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth state changed:', event, session?.user?.id);
+          
+          if (session?.user) {
+            try {
+              const user = await getUserById(session.user.id);
+              setCurrentUser(user);
+            } catch (error) {
+              console.error('Error fetching user details:', error);
+              setCurrentUser(null);
+            } finally {
+              setIsLoading(false);
+            }
+          } else {
+            setCurrentUser(null);
             setIsLoading(false);
           }
-        } else {
-          setIsLoading(false);
-        }
-      }
-    });
+        });
 
-    // THEN check for existing session
-    const fetchCurrentUser = async () => {
-      try {
-        console.log('Checking for existing session');
+        // THEN check for existing session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -76,21 +65,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCurrentUser(user);
           } catch (userError) {
             console.error('Error fetching user details:', userError);
+            setCurrentUser(null);
           }
         }
+        
+        setIsLoading(false);
+        setAuthInitialized(true);
+
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
-        console.error('Error fetching current user:', error);
-      } finally {
+        console.error('Auth initialization error:', error);
         setIsLoading(false);
         setAuthInitialized(true);
       }
     };
 
-    fetchCurrentUser();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -127,23 +119,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setIsLoading(true);
-      // First clear the local state
-      setCurrentUser(null);
       
-      // Then sign out from Supabase
+      // First sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         throw error;
       }
       
+      // Then clear the local state
+      setCurrentUser(null);
+      
       toast.success("Logged out successfully");
       
       // Force clear localStorage as a fallback
       localStorage.removeItem('supabase.auth.token');
-      
-      // Add a slight delay to ensure all state updates have been processed
-      await new Promise(resolve => setTimeout(resolve, 100));
       
     } catch (error: any) {
       console.error('Logout error:', error);

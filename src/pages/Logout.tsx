@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,32 +15,23 @@ const Logout = () => {
   useEffect(() => {
     const performLogout = async () => {
       try {
+        if (logoutAttempted) return;
+        
         setLogoutAttempted(true);
         await logout();
-        toast.success("You have been logged out");
         
-        // Force a redirect to login page
+        // Force a redirect to login page with a delay to ensure state is updated
         setTimeout(() => {
           navigate("/login", { replace: true });
         }, 500);
       } catch (error: any) {
         console.error("Error during logout:", error);
         setError(error.message || "Failed to log out properly");
-        toast.error("Failed to log out properly");
       }
     };
     
     performLogout();
-  }, [logout, navigate]);
-  
-  if (isLoading && !logoutAttempted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Logging out...</span>
-      </div>
-    );
-  }
+  }, [logout, navigate, logoutAttempted]);
   
   if (error) {
     return (
@@ -61,7 +52,7 @@ const Logout = () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <span className="ml-2">Redirecting to login...</span>
+      <span className="ml-2">Logging out...</span>
     </div>
   );
 };

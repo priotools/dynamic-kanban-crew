@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import UserManagement from "@/components/admin/UserManagement";
 import DepartmentsManagement from "@/components/admin/DepartmentsManagement";
 import UserDepartmentMapping from "@/components/admin/UserDepartmentMapping";
@@ -13,22 +14,64 @@ const AdminManagement = () => {
   const { currentUser, isLoading, isSupabaseReady } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("users");
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
   
   useEffect(() => {
-    console.log('AdminManagement - Auth state:', { isLoading, currentUser });
+    let redirectTimeout: number;
     
-    if (!isLoading && !currentUser) {
-      navigate("/login", { replace: true });
-    } else if (!isLoading && currentUser && currentUser.role !== "admin") {
-      navigate("/dashboard", { replace: true });
+    console.log('AdminManagement - Auth state:', { isLoading, currentUser, role: currentUser?.role });
+    
+    if (!isLoading) {
+      if (!currentUser && !redirectAttempted) {
+        console.log("User not authenticated, redirecting to login");
+        setRedirectAttempted(true);
+        navigate("/login", { replace: true });
+      } else if (currentUser && currentUser.role !== "admin" && !redirectAttempted) {
+        console.log("User not admin, redirecting to dashboard");
+        setRedirectAttempted(true);
+        navigate("/dashboard", { replace: true });
+      }
+    } else if (!redirectAttempted) {
+      // Set a timeout to show manual buttons if loading takes too long
+      redirectTimeout = window.setTimeout(() => {
+        setRedirectAttempted(true);
+      }, 3000);
     }
-  }, [isLoading, currentUser, navigate]);
+    
+    return () => {
+      if (redirectTimeout) window.clearTimeout(redirectTimeout);
+    };
+  }, [isLoading, currentUser, navigate, redirectAttempted]);
   
-  if (isLoading) {
+  if (isLoading && !redirectAttempted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <p className="text-lg text-center">Loading admin panel...</p>
+      </div>
+    );
+  }
+  
+  if (redirectAttempted && (!currentUser || currentUser.role !== "admin")) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-lg text-center mb-4">
+          {!currentUser ? "Authentication required" : "Admin access required"} to access this page
+        </p>
+        <div className="flex gap-4">
+          <Button 
+            onClick={() => navigate("/login")}
+            variant="outline"
+          >
+            Go to Login
+          </Button>
+          <Button 
+            onClick={() => navigate("/dashboard")}
+          >
+            Go to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }

@@ -9,39 +9,38 @@ import { Button } from "@/components/ui/button";
 const Index = () => {
   const { currentUser, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [attemptedNavigation, setAttemptedNavigation] = useState(false);
+  const [attemptedRedirect, setAttemptedRedirect] = useState(false);
   
   useEffect(() => {
+    // Track whether we've already attempted redirection
+    let redirectTimeout: number;
+    
     console.log('Index page - Auth state:', { isLoading, currentUser: !!currentUser });
     
-    // Only attempt navigation when auth state is known (not loading)
+    // Only navigate when auth state is determined (not loading)
     if (!isLoading) {
-      setAttemptedNavigation(true);
       if (currentUser) {
         console.log('Redirecting to dashboard');
         navigate("/dashboard", { replace: true });
-      } else {
+      } else if (!attemptedRedirect) {
         console.log('Redirecting to login');
+        setAttemptedRedirect(true);
         navigate("/login", { replace: true });
       }
-    }
-  }, [currentUser, isLoading, navigate]);
-  
-  // If still loading after 3 seconds, show a retry button
-  useEffect(() => {
-    let timeout: number;
-    if (isLoading) {
-      timeout = window.setTimeout(() => {
-        setAttemptedNavigation(true);
+    } else if (!attemptedRedirect) {
+      // Set a timeout to show manual buttons if loading takes too long
+      redirectTimeout = window.setTimeout(() => {
+        setAttemptedRedirect(true);
       }, 2000);
     }
     
     return () => {
-      if (timeout) clearTimeout(timeout);
+      if (redirectTimeout) window.clearTimeout(redirectTimeout);
     };
-  }, [isLoading]);
+  }, [currentUser, isLoading, navigate, attemptedRedirect]);
   
-  if (isLoading && !attemptedNavigation) {
+  // While still determining auth state, show loading
+  if (isLoading && !attemptedRedirect) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -54,7 +53,7 @@ const Index = () => {
     );
   }
   
-  // If loading takes too long, provide manual navigation options
+  // If loading takes too long or we couldn't redirect automatically, provide manual options
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <h1 className="text-2xl font-semibold mb-6">Welcome to Kanban Board</h1>
@@ -62,7 +61,6 @@ const Index = () => {
         <Button 
           className="w-full" 
           onClick={() => navigate("/dashboard")}
-          disabled={isLoading}
         >
           Go to Dashboard
         </Button>
@@ -70,7 +68,6 @@ const Index = () => {
           className="w-full" 
           variant="outline" 
           onClick={() => navigate("/login")}
-          disabled={isLoading}
         >
           Login
         </Button>
