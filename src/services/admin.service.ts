@@ -155,7 +155,7 @@ export async function deleteUser(userId: string): Promise<void> {
   }
 }
 
-export async function getAllUserss(): Promise<Void[]> {
+export async function getAllUsers(): Promise<Void[]> {
   try {
     const { data, error } = await supabase
       .from('profiles')
