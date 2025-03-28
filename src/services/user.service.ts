@@ -30,6 +30,11 @@ export async function getUsers(): Promise<User[]> {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
+  if (!id) {
+    console.error('getUserById called with empty ID');
+    return null;
+  }
+  
   try {
     const { data, error } = await supabase
       .from('profiles')

@@ -20,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSupabaseReady] = useState<boolean>(isSupabaseConfigured());
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -27,38 +28,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
-        setIsLoading(true);
         try {
           const user = await getUserById(session.user.id);
           setCurrentUser(user);
+          setIsLoading(false);
         } catch (error) {
           console.error('Error fetching user after sign in:', error);
-        } finally {
           setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
+        setIsLoading(false);
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Session was refreshed, no need to re-fetch the user if we already have it
+        if (!currentUser && session?.user) {
+          try {
+            const user = await getUserById(session.user.id);
+            setCurrentUser(user);
+          } catch (error) {
+            console.error('Error fetching user after token refresh:', error);
+          } finally {
+            setIsLoading(false);
+          }
+        } else {
+          setIsLoading(false);
+        }
       }
     });
 
     // THEN check for existing session
     const fetchCurrentUser = async () => {
       try {
-        setIsLoading(true);
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setIsLoading(false);
+          setAuthInitialized(true);
+          return;
+        }
         
         if (data.session?.user) {
           try {
             const user = await getUserById(data.session.user.id);
             setCurrentUser(user);
-          } catch (error) {
-            console.error('Error fetching user details:', error);
+          } catch (userError) {
+            console.error('Error fetching user details:', userError);
           }
         }
       } catch (error) {
         console.error('Error fetching current user:', error);
       } finally {
         setIsLoading(false);
+        setAuthInitialized(true);
       }
     };
 
@@ -134,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         currentUser,
-        isLoading,
+        isLoading: isLoading && !authInitialized,
         isSupabaseReady,
         login,
         logout,
