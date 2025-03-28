@@ -154,3 +154,23 @@ export async function deleteUser(userId: string): Promise<void> {
     throw error;
   }
 }
+
+export async function getAllUserss(): Promise<Void[]> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+    
+    if (error) throw error;
+    
+    return data.map(dept => ({
+      id: authData.user.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+    }));
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+}
