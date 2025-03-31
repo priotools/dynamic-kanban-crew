@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { getUsers } from "@/services/user.service";
 import { updateUserRole, updateUserDepartment } from "@/services/admin.service";
@@ -102,7 +103,7 @@ const UsersManagement = () => {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatarUrl} />
+                        <AvatarImage src={user.avatar} />
                         <AvatarFallback>
                           {user.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>

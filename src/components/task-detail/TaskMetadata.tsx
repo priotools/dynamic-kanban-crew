@@ -1,3 +1,4 @@
+
 import { User, Department, Task } from "@/types";
 import { CalendarIcon, Tag, User as UserIcon, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,11 +16,21 @@ export function TaskMetadata({ assignee, department, dueDate, tags }: TaskMetada
     <div className="grid grid-cols-2 gap-x-8 gap-y-4">
       {assignee && (
         <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={assignee?.avatarUrl} />
-            <AvatarFallback>{assignee?.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <span>{assignee?.name}</span>
+          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+            <UserIcon className="h-4 w-4 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Assigned to</p>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={assignee.avatar} />
+                <AvatarFallback className="text-xs">
+                  {assignee.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium">{assignee.name}</span>
+            </div>
+          </div>
         </div>
       )}
       

@@ -1,214 +1,280 @@
-import { User, Department, Task } from "@/types";
+import { Department, Task, TaskStatus, User } from "@/types";
 
-// Mock users data
 export const mockUsers: User[] = [
   {
-    id: "user1",
+    id: "user-1",
     name: "Alex Johnson",
     email: "alex@example.com",
+    avatar: "/avatars/avatar-1.jpg",
     role: "admin",
-    avatarUrl: "/avatars/avatar-1.jpg",
-    departmentId: "dept1"
   },
   {
-    id: "user2",
-    name: "Sam Wilson",
-    email: "sam@example.com",
+    id: "user-2",
+    name: "Sarah Miller",
+    email: "sarah@example.com",
+    avatar: "/avatars/avatar-2.jpg",
     role: "manager",
-    avatarUrl: "/avatars/avatar-2.jpg",
-    departmentId: "dept1"
+    departmentId: "dept-1",
   },
   {
-    id: "user3",
-    name: "Jamie Smith",
-    email: "jamie@example.com",
-    role: "employee",
-    avatarUrl: "/avatars/avatar-3.jpg",
-    departmentId: "dept2"
-  },
-  {
-    id: "user4",
-    name: "Taylor Brown",
-    email: "taylor@example.com",
-    role: "employee",
-    avatarUrl: "/avatars/avatar-4.jpg",
-    departmentId: "dept2"
-  },
-  {
-    id: "user5",
-    name: "Casey Miller",
-    email: "casey@example.com",
-    role: "employee",
-    avatarUrl: "/avatars/avatar-5.jpg",
-    departmentId: "dept3"
-  },
-  {
-    id: "user6",
-    name: "Jessie Davis",
-    email: "jessie@example.com",
+    id: "user-3",
+    name: "James Wilson",
+    email: "james@example.com",
+    avatar: "/avatars/avatar-3.jpg",
     role: "manager",
-    avatarUrl: "/avatars/avatar-6.jpg",
-    departmentId: "dept3"
+    departmentId: "dept-2",
   },
   {
-    id: "user7",
-    name: "Riley White",
-    email: "riley@example.com",
+    id: "user-4",
+    name: "Emily Davis",
+    email: "emily@example.com",
+    avatar: "/avatars/avatar-4.jpg",
     role: "employee",
-    avatarUrl: "/avatars/avatar-7.jpg",
-    departmentId: "dept3"
-  }
+    departmentId: "dept-1",
+  },
+  {
+    id: "user-5",
+    name: "Michael Brown",
+    email: "michael@example.com",
+    avatar: "/avatars/avatar-5.jpg",
+    role: "employee",
+    departmentId: "dept-1",
+  },
+  {
+    id: "user-6",
+    name: "Jessica Taylor",
+    email: "jessica@example.com",
+    avatar: "/avatars/avatar-6.jpg",
+    role: "employee",
+    departmentId: "dept-2",
+  },
+  {
+    id: "user-7",
+    name: "David Clark",
+    email: "david@example.com",
+    avatar: "/avatars/avatar-7.jpg",
+    role: "employee",
+    departmentId: "dept-2",
+  },
 ];
 
-// Mock departments data
 export const mockDepartments: Department[] = [
   {
-    id: "dept1",
+    id: "dept-1",
     name: "Engineering",
-    headId: "user2"
+    headId: "user-2",
   },
   {
-    id: "dept2",
+    id: "dept-2",
     name: "Marketing",
-    headId: "user6"
+    headId: "user-3",
   },
   {
-    id: "dept3",
-    name: "Sales",
-    headId: "user5"
-  }
+    id: "dept-3",
+    name: "Design",
+    headId: null,
+  },
+  {
+    id: "dept-4",
+    name: "Finance",
+    headId: null,
+  },
 ];
 
-// Mock tasks data
 export const mockTasks: Task[] = [
   {
-    id: "task1",
-    title: "Develop UI for user profile",
-    description: "Create a user-friendly interface for users to manage their profiles.",
-    status: "in_progress",
-    priority: "high",
-    assigneeId: "user3",
-    createdBy: "user2",
-    departmentId: "dept1",
-    dueDate: "2024-08-15",
-    tags: ["UI", "development", "user profile"],
-    createdAt: "2024-07-01"
-  },
-  {
-    id: "task2",
-    title: "Design marketing campaign",
-    description: "Plan and design a marketing campaign for the new product launch.",
+    id: "task-1",
+    title: "Implement authentication",
+    description: "Set up JWT authentication in the backend",
     status: "todo",
-    priority: "medium",
-    assigneeId: "user6",
-    createdBy: "user2",
-    departmentId: "dept2",
-    dueDate: "2024-08-20",
-    tags: ["marketing", "design", "campaign"],
-    createdAt: "2024-07-05"
+    priority: "high",
+    assigneeId: "user-4",
+    createdBy: "user-2",
+    departmentId: "dept-1",
+    dueDate: "2023-07-15",
+    createdAt: "2023-07-01",
+    tags: ["backend", "security"],
   },
   {
-    id: "task3",
-    title: "Generate sales leads",
-    description: "Identify and generate potential sales leads for the sales team.",
+    id: "task-2",
+    title: "Design landing page",
+    description: "Create a modern landing page design",
+    status: "in_progress",
+    priority: "medium",
+    assigneeId: "user-5",
+    createdBy: "user-2",
+    departmentId: "dept-1",
+    dueDate: "2023-07-10",
+    createdAt: "2023-07-02",
+    tags: ["design", "frontend"],
+  },
+  {
+    id: "task-3",
+    title: "SEO optimization",
+    description: "Optimize website for search engines",
     status: "backlog",
     priority: "low",
-    assigneeId: "user5",
-    createdBy: "user2",
-    departmentId: "dept3",
-    dueDate: "2024-08-25",
-    tags: ["sales", "lead generation"],
-    createdAt: "2024-07-10"
+    assigneeId: "user-6",
+    createdBy: "user-3",
+    departmentId: "dept-2",
+    dueDate: "2023-07-20",
+    createdAt: "2023-07-01",
+    tags: ["marketing", "seo"],
   },
   {
-    id: "task4",
-    title: "Implement user authentication",
-    description: "Implement secure user authentication and authorization mechanisms.",
-    status: "done",
+    id: "task-4",
+    title: "Fix payment processing bug",
+    description: "Investigate and fix issues with payment processing",
+    status: "in_review",
     priority: "urgent",
-    assigneeId: "user3",
-    createdBy: "user2",
-    departmentId: "dept1",
-    dueDate: "2024-07-30",
-    tags: ["security", "authentication", "authorization"],
-    createdAt: "2024-07-15"
+    assigneeId: "user-4",
+    createdBy: "user-2",
+    departmentId: "dept-1",
+    dueDate: "2023-07-05",
+    createdAt: "2023-06-28",
+    tags: ["backend", "bug", "critical"],
   },
   {
-    id: "task5",
-    title: "Create social media content",
-    description: "Develop engaging content for various social media platforms.",
-    status: "in_review",
-    priority: "medium",
-    assigneeId: "user6",
-    createdBy: "user2",
-    departmentId: "dept2",
-    dueDate: "2024-09-01",
-    tags: ["social media", "content creation"],
-    createdAt: "2024-07-20"
-  },
-  {
-    id: "task6",
-    title: "Follow up with potential clients",
-    description: "Contact and follow up with potential clients to close sales deals.",
-    status: "in_progress",
-    priority: "high",
-    assigneeId: "user7",
-    createdBy: "user5",
-    departmentId: "dept3",
-    dueDate: "2024-09-05",
-    tags: ["sales", "client relations"],
-    createdAt: "2024-07-25"
-  },
-  {
-    id: "task7",
-    title: "Test user profile UI",
-    description: "Test the user profile UI for usability and functionality.",
-    status: "in_review",
-    priority: "medium",
-    assigneeId: "user4",
-    createdBy: "user2",
-    departmentId: "dept1",
-    dueDate: "2024-08-10",
-    tags: ["UI", "testing", "user profile"],
-    createdAt: "2024-07-01"
-  },
-  {
-    id: "task8",
-    title: "Analyze marketing campaign results",
-    description: "Analyze the results of the marketing campaign and provide insights.",
-    status: "done",
-    priority: "medium",
-    assigneeId: "user6",
-    createdBy: "user2",
-    departmentId: "dept2",
-    dueDate: "2024-08-15",
-    tags: ["marketing", "analysis", "campaign"],
-    createdAt: "2024-07-05"
-  },
-  {
-    id: "task9",
-    title: "Negotiate contracts with clients",
-    description: "Negotiate and finalize contracts with new clients.",
-    status: "in_progress",
-    priority: "high",
-    assigneeId: "user5",
-    createdBy: "user2",
-    departmentId: "dept3",
-    dueDate: "2024-08-20",
-    tags: ["sales", "contracts", "negotiation"],
-    createdAt: "2024-07-10"
-  },
-  {
-    id: "task10",
-    title: "Implement data validation",
-    description: "Implement data validation to ensure data integrity.",
+    id: "task-5",
+    title: "Create social media campaign",
+    description: "Design a social media campaign for product launch",
     status: "todo",
     priority: "medium",
-    assigneeId: "user3",
-    createdBy: "user2",
-    departmentId: "dept1",
-    dueDate: "2024-08-25",
-    tags: ["data", "validation", "integrity"],
-    createdAt: "2024-07-15"
-  }
+    assigneeId: "user-6",
+    createdBy: "user-3",
+    departmentId: "dept-2",
+    dueDate: "2023-07-18",
+    createdAt: "2023-07-03",
+    tags: ["marketing", "social media"],
+  },
+  {
+    id: "task-6",
+    title: "Update user documentation",
+    description: "Update documentation to reflect new features",
+    status: "done",
+    priority: "low",
+    assigneeId: "user-7",
+    createdBy: "user-3",
+    departmentId: "dept-2",
+    dueDate: "2023-07-08",
+    createdAt: "2023-06-30",
+    updatedAt: "2023-07-07",
+    tags: ["documentation"],
+  },
+  {
+    id: "task-7",
+    title: "Code refactoring",
+    description: "Refactor authentication module for better performance",
+    status: "in_progress",
+    priority: "medium",
+    assigneeId: "user-5",
+    createdBy: "user-2",
+    departmentId: "dept-1",
+    dueDate: "2023-07-14",
+    createdAt: "2023-07-03",
+    tags: ["backend", "refactoring"],
+  },
+  {
+    id: "task-8",
+    title: "Create API documentation",
+    description: "Document all API endpoints for developers",
+    status: "todo",
+    priority: "medium",
+    assigneeId: "user-4",
+    createdBy: "user-2",
+    departmentId: "dept-1",
+    dueDate: "2023-07-17",
+    createdAt: "2023-07-04",
+    tags: ["documentation", "api"],
+  },
+  {
+    id: "task-9",
+    title: "Implement search functionality",
+    description: "Add search functionality to the dashboard",
+    status: "backlog",
+    priority: "low",
+    assigneeId: null,
+    createdBy: "user-2",
+    departmentId: "dept-1",
+    createdAt: "2023-07-02",
+    tags: ["frontend", "feature"],
+  },
+  {
+    id: "task-10",
+    title: "Analyze competitor websites",
+    description: "Research competitor websites for insights",
+    status: "done",
+    priority: "medium",
+    assigneeId: "user-7",
+    createdBy: "user-3",
+    departmentId: "dept-2",
+    dueDate: "2023-07-06",
+    createdAt: "2023-06-29",
+    updatedAt: "2023-07-05",
+    tags: ["research", "marketing"],
+  },
 ];
+
+export const getTasksByStatus = (): Record<TaskStatus, Task[]> => {
+  const tasksByStatus: Record<TaskStatus, Task[]> = {
+    backlog: [],
+    todo: [],
+    in_progress: [],
+    in_review: [],
+    done: [],
+  };
+  
+  mockTasks.forEach(task => {
+    tasksByStatus[task.status].push(task);
+  });
+  
+  return tasksByStatus;
+};
+
+export const getTasksByDepartment = (): Record<string, Task[]> => {
+  const tasksByDepartment: Record<string, Task[]> = {};
+  
+  mockDepartments.forEach(dept => {
+    tasksByDepartment[dept.id] = [];
+  });
+  
+  mockTasks.forEach(task => {
+    if (tasksByDepartment[task.departmentId]) {
+      tasksByDepartment[task.departmentId].push(task);
+    }
+  });
+  
+  return tasksByDepartment;
+};
+
+export const getTasksByAssignee = (): Record<string, Task[]> => {
+  const tasksByAssignee: Record<string, Task[]> = {
+    unassigned: [],
+  };
+  
+  mockUsers.forEach(user => {
+    tasksByAssignee[user.id] = [];
+  });
+  
+  mockTasks.forEach(task => {
+    if (!task.assigneeId) {
+      tasksByAssignee.unassigned.push(task);
+    } else if (tasksByAssignee[task.assigneeId]) {
+      tasksByAssignee[task.assigneeId].push(task);
+    }
+  });
+  
+  return tasksByAssignee;
+};
+
+export const getUsersInDepartment = (departmentId: string): User[] => {
+  return mockUsers.filter(user => user.departmentId === departmentId);
+};
+
+export const getDepartmentById = (id: string): Department | undefined => {
+  return mockDepartments.find(dept => dept.id === id);
+};
+
+export const getUserById = (id: string): User | undefined => {
+  return mockUsers.find(user => user.id === id);
+};
