@@ -19,7 +19,7 @@ export async function getUsers(): Promise<User[]> {
       id: user.id,
       name: user.name || 'Unknown User',
       email: user.email,
-      avatar: user.avatar_url,
+      avatarUrl: user.avatar_url,
       role: user.role as UserRole, // Cast the string to UserRole enum
       departmentId: user.department_id
     }));
@@ -53,7 +53,7 @@ export async function getUserById(id: string): Promise<User | null> {
       id: data.id,
       name: data.name || 'Unknown User',
       email: data.email,
-      avatar: data.avatar_url,
+      avatarUrl: data.avatar_url,
       role: data.role as UserRole, // Cast the string to UserRole enum
       departmentId: data.department_id
     };

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useView } from "@/context/ViewContext";
@@ -7,7 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import KanbanBoard from "./KanbanBoard";
 import DepartmentView from "./DepartmentView";
 import UserView from "./UserView";
-import { Layers, Users, User2, PlusCircle, LayoutGrid, LogOut, ShieldCheck } from "lucide-react";
+import ProfileView from "./ProfileView";
+import { Layers, Users, User2, PlusCircle, LayoutGrid, LogOut, ShieldCheck, UserCog } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import TaskFormDialog from "./TaskFormDialog";
 import { useKanban } from "@/context/KanbanContext";
@@ -91,6 +93,15 @@ export default function DashboardLayout() {
             
             <nav className="space-y-1 px-3">
               <Button
+                variant={viewMode === "profile" ? "default" : "ghost"}
+                className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
+                onClick={() => setViewMode("profile")}
+              >
+                <UserCog className="h-4 w-4 mr-2" />
+                {sidebarOpen && <span>My Profile</span>}
+              </Button>
+            
+              <Button
                 variant={viewMode === "kanban" ? "default" : "ghost"}
                 className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
                 onClick={() => setViewMode("kanban")}
@@ -153,7 +164,7 @@ export default function DashboardLayout() {
             !sidebarOpen && "justify-center"
           )}>
             <Avatar className="h-9 w-9">
-              <AvatarImage src={currentUser.avatar} />
+              <AvatarImage src={currentUser.avatarUrl} />
               <AvatarFallback>
                 {currentUser.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -186,6 +197,7 @@ export default function DashboardLayout() {
           
           <div className="flex-1 flex items-center">
             <h1 className="text-lg font-medium">
+              {viewMode === "profile" && "My Profile"}
               {viewMode === "kanban" && "Kanban Board"}
               {viewMode === "departments" && "Departments"}
               {viewMode === "users" && "Team Members"}
@@ -199,6 +211,9 @@ export default function DashboardLayout() {
               className="w-full"
             >
               <TabsList>
+                <TabsTrigger value="profile">
+                  <UserCog className="h-4 w-4" />
+                </TabsTrigger>
                 <TabsTrigger value="kanban">
                   <LayoutGrid className="h-4 w-4" />
                 </TabsTrigger>
@@ -214,6 +229,7 @@ export default function DashboardLayout() {
         </header>
         
         <div className="flex-1 overflow-auto">
+          {viewMode === "profile" && <ProfileView />}
           {viewMode === "kanban" && <KanbanBoard />}
           {viewMode === "departments" && <DepartmentView />}
           {viewMode === "users" && <UserView />}
