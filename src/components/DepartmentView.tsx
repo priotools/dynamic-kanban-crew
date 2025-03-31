@@ -1,3 +1,4 @@
+
 import { useKanban } from "@/context/KanbanContext";
 import { useView } from "@/context/ViewContext";
 import { Task, User } from "@/types";
@@ -134,7 +135,7 @@ export default function DepartmentView() {
                 {departmentUsers.map(user => (
                   <div key={user.id} className="flex items-center gap-3 p-4 rounded-lg border">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.avatar} />
+                      <AvatarImage src={user.avatarUrl} />
                       <AvatarFallback>
                         {user.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>

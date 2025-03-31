@@ -9,7 +9,7 @@ import KanbanBoard from "./KanbanBoard";
 import DepartmentView from "./DepartmentView";
 import UserView from "./UserView";
 import ProfileView from "./ProfileView";
-import { Layers, Users, User2, PlusCircle, LayoutGrid, LogOut, ShieldCheck, UserCog } from "lucide-react";
+import { Layers, Users, User2, PlusCircle, LayoutGrid, LogOut, ShieldCheck, UserCog, ListTodo } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import TaskFormDialog from "./TaskFormDialog";
 import { useKanban } from "@/context/KanbanContext";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
+import PersonalTaskList from "./PersonalTaskList";
 
 export default function DashboardLayout() {
   const { currentUser, logout } = useAuth();
@@ -25,6 +26,7 @@ export default function DashboardLayout() {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [showPersonalTasks, setShowPersonalTasks] = useState(false);
   
   useEffect(() => {
     setSidebarOpen(!isMobile);
@@ -42,6 +44,25 @@ export default function DashboardLayout() {
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully");
+  };
+
+  const renderMainContent = () => {
+    if (showPersonalTasks) {
+      return <div className="p-6 animate-fade-in"><PersonalTaskList /></div>;
+    }
+
+    switch (viewMode) {
+      case "profile":
+        return <ProfileView />;
+      case "kanban":
+        return <KanbanBoard />;
+      case "departments":
+        return <DepartmentView />;
+      case "users":
+        return <UserView />;
+      default:
+        return <KanbanBoard />;
+    }
   };
   
   return (
@@ -93,27 +114,35 @@ export default function DashboardLayout() {
             
             <nav className="space-y-1 px-3">
               <Button
-                variant={viewMode === "profile" ? "default" : "ghost"}
-                className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
-                onClick={() => setViewMode("profile")}
-              >
-                <UserCog className="h-4 w-4 mr-2" />
-                {sidebarOpen && <span>My Profile</span>}
-              </Button>
-            
-              <Button
                 variant={viewMode === "kanban" ? "default" : "ghost"}
                 className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
-                onClick={() => setViewMode("kanban")}
+                onClick={() => {
+                  setViewMode("kanban");
+                  setShowPersonalTasks(false);
+                }}
               >
                 <LayoutGrid className="h-4 w-4 mr-2" />
                 {sidebarOpen && <span>Kanban Board</span>}
               </Button>
               
               <Button
+                variant={showPersonalTasks ? "default" : "ghost"}
+                className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
+                onClick={() => {
+                  setShowPersonalTasks(true);
+                }}
+              >
+                <ListTodo className="h-4 w-4 mr-2" />
+                {sidebarOpen && <span>My Tasks</span>}
+              </Button>
+              
+              <Button
                 variant={viewMode === "departments" ? "default" : "ghost"}
                 className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
-                onClick={() => setViewMode("departments")}
+                onClick={() => {
+                  setViewMode("departments");
+                  setShowPersonalTasks(false);
+                }}
               >
                 <Users className="h-4 w-4 mr-2" />
                 {sidebarOpen && <span>Departments</span>}
@@ -121,11 +150,26 @@ export default function DashboardLayout() {
               
               <Button
                 variant={viewMode === "users" ? "default" : "ghost"}
-                className={cn("w-full justify-start", !sidebarOpen && "justify-center px-0")}
-                onClick={() => setViewMode("users")}
+                className={cn("w-full justify-start mb-1", !sidebarOpen && "justify-center px-0")}
+                onClick={() => {
+                  setViewMode("users");
+                  setShowPersonalTasks(false);
+                }}
               >
                 <User2 className="h-4 w-4 mr-2" />
                 {sidebarOpen && <span>Team Members</span>}
+              </Button>
+              
+              <Button
+                variant={viewMode === "profile" ? "default" : "ghost"}
+                className={cn("w-full justify-start", !sidebarOpen && "justify-center px-0")}
+                onClick={() => {
+                  setViewMode("profile");
+                  setShowPersonalTasks(false);
+                }}
+              >
+                <UserCog className="h-4 w-4 mr-2" />
+                {sidebarOpen && <span>My Profile</span>}
               </Button>
 
               {currentUser && currentUser.role === "admin" && (
@@ -197,25 +241,32 @@ export default function DashboardLayout() {
           
           <div className="flex-1 flex items-center">
             <h1 className="text-lg font-medium">
-              {viewMode === "profile" && "My Profile"}
-              {viewMode === "kanban" && "Kanban Board"}
-              {viewMode === "departments" && "Departments"}
-              {viewMode === "users" && "Team Members"}
+              {showPersonalTasks ? "My Tasks" : (
+                <>
+                  {viewMode === "profile" && "My Profile"}
+                  {viewMode === "kanban" && "Kanban Board"}
+                  {viewMode === "departments" && "Departments"}
+                  {viewMode === "users" && "Team Members"}
+                </>
+              )}
             </h1>
           </div>
           
           <div className="md:hidden">
             <Tabs
               value={viewMode}
-              onValueChange={(value: any) => setViewMode(value)}
+              onValueChange={(value: any) => {
+                setViewMode(value as ViewMode);
+                setShowPersonalTasks(false);
+              }}
               className="w-full"
             >
               <TabsList>
-                <TabsTrigger value="profile">
-                  <UserCog className="h-4 w-4" />
-                </TabsTrigger>
                 <TabsTrigger value="kanban">
                   <LayoutGrid className="h-4 w-4" />
+                </TabsTrigger>
+                <TabsTrigger value="tasks" onClick={() => setShowPersonalTasks(true)}>
+                  <ListTodo className="h-4 w-4" />
                 </TabsTrigger>
                 <TabsTrigger value="departments">
                   <Users className="h-4 w-4" />
@@ -223,16 +274,16 @@ export default function DashboardLayout() {
                 <TabsTrigger value="users">
                   <User2 className="h-4 w-4" />
                 </TabsTrigger>
+                <TabsTrigger value="profile">
+                  <UserCog className="h-4 w-4" />
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
         </header>
         
         <div className="flex-1 overflow-auto">
-          {viewMode === "profile" && <ProfileView />}
-          {viewMode === "kanban" && <KanbanBoard />}
-          {viewMode === "departments" && <DepartmentView />}
-          {viewMode === "users" && <UserView />}
+          {renderMainContent()}
         </div>
       </main>
     </div>

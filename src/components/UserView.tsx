@@ -1,3 +1,4 @@
+
 import { useKanban } from "@/context/KanbanContext";
 import { useView } from "@/context/ViewContext";
 import { Task, User } from "@/types";
@@ -91,7 +92,7 @@ export default function UserView() {
                 )}
               >
                 <Avatar className="h-12 w-12 border-2 border-white">
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.avatarUrl} />
                   <AvatarFallback>
                     {user.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
@@ -106,7 +107,7 @@ export default function UserView() {
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center mb-8">
             <Avatar className="h-16 w-16 mr-4">
-              <AvatarImage src={currentUser.avatar} />
+              <AvatarImage src={currentUser.avatarUrl} />
               <AvatarFallback className="text-xl">
                 {currentUser.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
