@@ -6,12 +6,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllUsers, createUser, updateUserRole, deleteUser } from "@/services/admin.service";
+import { getAllUsers, createUser, updateUserProfile, deleteUser } from "@/services/admin.service";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { UserRole, User } from "@/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const createUserSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "manager", "employee"]),
+  avatarUrl: z.string().optional()
+});
+
+const editUserSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  role: z.enum(["admin", "manager", "employee"]),
+  avatarUrl: z.string().optional(),
+  id: z.string()
+});
+
+type CreateUserFormValues = z.infer<typeof createUserSchema>;
+type EditUserFormValues = z.infer<typeof editUserSchema>;
 
 export default function UserManagement() {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
@@ -20,15 +44,29 @@ export default function UserManagement() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  // Form states
-  const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'employee' as UserRole
+  const queryClient = useQueryClient();
+  
+  const createUserForm = useForm<CreateUserFormValues>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      role: 'employee',
+      avatarUrl: ''
+    }
   });
   
-  const queryClient = useQueryClient();
+  const editUserForm = useForm<EditUserFormValues>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      role: 'employee',
+      avatarUrl: '',
+      id: ''
+    }
+  });
   
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin', 'users'],
@@ -36,11 +74,11 @@ export default function UserManagement() {
   });
   
   const createUserMutation = useMutation({
-    mutationFn: createUser,
+    mutationFn: (values: CreateUserFormValues) => createUser(values),
     onSuccess: () => {
       toast.success('User created successfully');
       setIsAddUserDialogOpen(false);
-      resetNewUserForm();
+      createUserForm.reset();
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
     onError: (error: any) => {
@@ -48,16 +86,21 @@ export default function UserManagement() {
     }
   });
   
-  const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: string, role: UserRole }) => 
-      updateUserRole(userId, role),
+  const updateUserMutation = useMutation({
+    mutationFn: (values: EditUserFormValues) => 
+      updateUserProfile(values.id, {
+        name: values.name,
+        email: values.email,
+        role: values.role,
+        avatarUrl: values.avatarUrl || undefined
+      }),
     onSuccess: () => {
-      toast.success('User role updated successfully');
+      toast.success('User updated successfully');
       setIsEditUserDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
     onError: (error: any) => {
-      toast.error(`Failed to update user role: ${error.message}`);
+      toast.error(`Failed to update user: ${error.message}`);
     }
   });
   
@@ -73,39 +116,12 @@ export default function UserManagement() {
     }
   });
   
-  const resetNewUserForm = () => {
-    setNewUser({
-      name: '',
-      email: '',
-      password: '',
-      role: 'employee' as UserRole
-    });
+  const handleCreateUser = (values: CreateUserFormValues) => {
+    createUserMutation.mutate(values);
   };
   
-  const handleCreateUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.password) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
-    createUserMutation.mutate({
-      name: newUser.name,
-      email: newUser.email,
-      password: newUser.password,
-      role: newUser.role
-    });
-  };
-  
-  const handleUpdateRole = () => {
-    if (!userToEdit || !userToEdit.id || !userToEdit.role) {
-      toast.error('Please select a role');
-      return;
-    }
-    
-    updateRoleMutation.mutate({
-      userId: userToEdit.id,
-      role: userToEdit.role
-    });
+  const handleUpdateUser = (values: EditUserFormValues) => {
+    updateUserMutation.mutate(values);
   };
   
   const handleDeleteUser = () => {
@@ -118,7 +134,14 @@ export default function UserManagement() {
   };
   
   const handleOpenEditDialog = (user: User) => {
-    setUserToEdit({ ...user });
+    setUserToEdit(user);
+    editUserForm.reset({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl || ''
+    });
     setIsEditUserDialogOpen(true);
   };
   
@@ -138,75 +161,119 @@ export default function UserManagement() {
               Add User
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  placeholder="User's full name"
-                  required
+            
+            <Form {...createUserForm}>
+              <form onSubmit={createUserForm.handleSubmit(handleCreateUser)} className="space-y-4 py-4">
+                <FormField
+                  control={createUserForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="User's full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  placeholder="user@example.com"
-                  required
+                
+                <FormField
+                  control={createUserForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="user@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  placeholder="Minimum 6 characters"
-                  required
+                
+                <FormField
+                  control={createUserForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password *</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Minimum 6 characters" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
-                <Select 
-                  value={newUser.role} 
-                  onValueChange={(value) => setNewUser({ ...newUser, role: value as UserRole })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="employee">Employee</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateUser} disabled={createUserMutation.isPending}>
-                {createUserMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create User"
-                )}
-              </Button>
-            </DialogFooter>
+                
+                <FormField
+                  control={createUserForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="employee">Employee</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createUserForm.control}
+                  name="avatarUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Avatar URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/avatar.jpg" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter className="pt-4">
+                  <Button 
+                    variant="outline" 
+                    type="button" 
+                    onClick={() => setIsAddUserDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createUserMutation.isPending}
+                  >
+                    {createUserMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create User"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
@@ -220,8 +287,16 @@ export default function UserManagement() {
           {users && users.map((user: User) => (
             <Card key={user.id}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex justify-between items-start">
-                  <span>{user.name}</span>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center space-x-3">
+                    <Avatar>
+                      <AvatarImage src={user.avatarUrl} />
+                      <AvatarFallback>
+                        {user.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <CardTitle className="text-lg">{user.name}</CardTitle>
+                  </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
                       <Pencil className="h-4 w-4" />
@@ -230,18 +305,24 @@ export default function UserManagement() {
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
-                </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted-foreground mb-2">{user.email}</div>
-                <div className="flex items-center justify-between">
+                <div className="space-y-2">
                   <div className="text-sm">
-                    <span className="font-medium">Role:</span>{" "}
+                    <span className="text-muted-foreground">Email: </span>
+                    {user.email}
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Role: </span>
                     <span className="capitalize">{user.role}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    ID: {user.id.substring(0, 8)}...
-                  </div>
+                  {user.departmentId && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Department: </span>
+                      {user.departmentId}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -251,47 +332,105 @@ export default function UserManagement() {
       
       {/* Edit User Dialog */}
       <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit User Role</DialogTitle>
+            <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <div className="mb-4">
-              <div className="font-medium">{userToEdit?.name}</div>
-              <div className="text-sm text-muted-foreground">{userToEdit?.email}</div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-role">Role</Label>
-              <Select 
-                value={userToEdit?.role} 
-                onValueChange={(value) => setUserToEdit(userToEdit ? { ...userToEdit, role: value as UserRole } : null)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="employee">Employee</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateRole} disabled={updateRoleMutation.isPending}>
-              {updateRoleMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Role"
-              )}
-            </Button>
-          </DialogFooter>
+          
+          <Form {...editUserForm}>
+            <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)} className="space-y-4 py-4">
+              <FormField
+                control={editUserForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="employee">Employee</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="avatarUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avatar URL</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => setIsEditUserDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateUserMutation.isPending}
+                >
+                  {updateUserMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update User"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
       

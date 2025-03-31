@@ -101,7 +101,8 @@ export async function createUser(data: {
   name: string; 
   email: string; 
   password: string; 
-  role: UserRole 
+  role: UserRole;
+  avatarUrl?: string;
 }): Promise<User> {
   try {
     // Create auth user
@@ -111,16 +112,21 @@ export async function createUser(data: {
       email_confirm: true,
       user_metadata: {
         name: data.name,
+        avatar_url: data.avatarUrl
       }
     });
     
     if (authError) throw authError;
     if (!authData.user) throw new Error("User creation failed");
     
-    // Update profile with role
+    // Update profile with role and other data
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ role: data.role })
+      .update({ 
+        role: data.role,
+        name: data.name,
+        avatar_url: data.avatarUrl
+      })
       .eq('id', authData.user.id);
     
     if (profileError) throw profileError;
@@ -131,9 +137,50 @@ export async function createUser(data: {
       email: data.email,
       name: data.name,
       role: data.role,
+      avatarUrl: data.avatarUrl
     };
   } catch (error) {
     console.error('Error creating user:', error);
+    throw error;
+  }
+}
+
+export async function updateUserProfile(userId: string, data: {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  avatarUrl?: string;
+  departmentId?: string | null;
+}): Promise<void> {
+  try {
+    const updates: Record<string, any> = {};
+    
+    // Map data to database column names
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.email !== undefined) updates.email = data.email;
+    if (data.role !== undefined) updates.role = data.role;
+    if (data.avatarUrl !== undefined) updates.avatar_url = data.avatarUrl;
+    if (data.departmentId !== undefined) updates.department_id = data.departmentId;
+    
+    // Update profile
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId);
+    
+    if (error) throw error;
+    
+    // If email is being updated, also update auth user
+    if (data.email) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { email: data.email }
+      );
+      
+      if (authError) throw authError;
+    }
+  } catch (error) {
+    console.error(`Error updating user profile with ID ${userId}:`, error);
     throw error;
   }
 }
