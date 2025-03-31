@@ -74,7 +74,16 @@ export default function UserManagement() {
   });
   
   const createUserMutation = useMutation({
-    mutationFn: (values: CreateUserFormValues) => createUser(values),
+    mutationFn: (values: CreateUserFormValues) => {
+      // Ensure all required fields are present with their correct types
+      return createUser({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        role: values.role,
+        avatarUrl: values.avatarUrl || undefined
+      });
+    },
     onSuccess: () => {
       toast.success('User created successfully');
       setIsAddUserDialogOpen(false);
@@ -101,6 +110,7 @@ export default function UserManagement() {
     },
     onError: (error: any) => {
       toast.error(`Failed to update user: ${error.message}`);
+      console.error("Update error details:", error);
     }
   });
   
@@ -113,6 +123,7 @@ export default function UserManagement() {
     },
     onError: (error: any) => {
       toast.error(`Failed to delete user: ${error.message}`);
+      console.error("Delete error details:", error);
     }
   });
   

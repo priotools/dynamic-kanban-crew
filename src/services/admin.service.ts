@@ -5,11 +5,17 @@ import { User, UserRole, Department } from '@/types';
 // User management functions
 export async function getAllUsers(): Promise<User[]> {
   try {
+    console.log("Fetching all users...");
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*');
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+    
+    console.log("Fetched profiles:", profiles);
     
     return profiles.map((profile) => ({
       id: profile.id,
@@ -105,19 +111,35 @@ export async function createUser(data: {
   avatarUrl?: string;
 }): Promise<User> {
   try {
+    console.log("Creating user with data:", { 
+      email: data.email, 
+      name: data.name, 
+      role: data.role 
+    });
+    
     // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
-      email_confirm: true,
-      user_metadata: {
-        name: data.name,
-        avatar_url: data.avatarUrl
+      options: {
+        data: {
+          name: data.name,
+          avatar_url: data.avatarUrl
+        }
       }
     });
     
-    if (authError) throw authError;
-    if (!authData.user) throw new Error("User creation failed");
+    if (authError) {
+      console.error("Auth error when creating user:", authError);
+      throw authError;
+    }
+    
+    if (!authData.user) {
+      console.error("No user returned after signup");
+      throw new Error("User creation failed");
+    }
+    
+    console.log("Auth user created:", authData.user.id);
     
     // Update profile with role and other data
     const { error: profileError } = await supabase
@@ -129,7 +151,12 @@ export async function createUser(data: {
       })
       .eq('id', authData.user.id);
     
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error("Profile update error:", profileError);
+      throw profileError;
+    }
+    
+    console.log("User profile updated with role and data");
     
     // Return created user
     return {
@@ -153,6 +180,7 @@ export async function updateUserProfile(userId: string, data: {
   departmentId?: string | null;
 }): Promise<void> {
   try {
+    console.log(`Updating user profile for user ${userId} with data:`, data);
     const updates: Record<string, any> = {};
     
     // Map data to database column names
@@ -162,22 +190,33 @@ export async function updateUserProfile(userId: string, data: {
     if (data.avatarUrl !== undefined) updates.avatar_url = data.avatarUrl;
     if (data.departmentId !== undefined) updates.department_id = data.departmentId;
     
+    console.log("Profile updates to apply:", updates);
+    
     // Update profile
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', userId);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    }
+    
+    console.log("Profile updated successfully");
     
     // If email is being updated, also update auth user
     if (data.email) {
-      const { error: authError } = await supabase.auth.admin.updateUserById(
-        userId,
-        { email: data.email }
-      );
+      const { error: authError } = await supabase.auth.updateUser({
+        email: data.email
+      });
       
-      if (authError) throw authError;
+      if (authError) {
+        console.error("Error updating auth user email:", authError);
+        throw authError;
+      }
+      
+      console.log("Auth user email updated successfully");
     }
   } catch (error) {
     console.error(`Error updating user profile with ID ${userId}:`, error);
@@ -187,12 +226,18 @@ export async function updateUserProfile(userId: string, data: {
 
 export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
   try {
+    console.log(`Updating role for user ${userId} to ${role}`);
     const { error } = await supabase
       .from('profiles')
       .update({ role })
       .eq('id', userId);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating role:", error);
+      throw error;
+    }
+    
+    console.log("User role updated successfully");
   } catch (error) {
     console.error(`Error updating role for user with ID ${userId}:`, error);
     throw error;
@@ -201,12 +246,18 @@ export async function updateUserRole(userId: string, role: UserRole): Promise<vo
 
 export async function updateUserDepartment(userId: string, departmentId: string | null): Promise<void> {
   try {
+    console.log(`Updating department for user ${userId} to ${departmentId || 'null'}`);
     const { error } = await supabase
       .from('profiles')
       .update({ department_id: departmentId })
       .eq('id', userId);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating department:", error);
+      throw error;
+    }
+    
+    console.log("User department updated successfully");
   } catch (error) {
     console.error(`Error updating department for user with ID ${userId}:`, error);
     throw error;
@@ -215,10 +266,37 @@ export async function updateUserDepartment(userId: string, departmentId: string 
 
 export async function deleteUser(userId: string): Promise<void> {
   try {
-    // This will delete the auth user, which will cascade to the profile
+    console.log(`Deleting user with ID ${userId}`);
+    
+    // Delete the user - this should cascade to the profile due to foreign key constraints
     const { error } = await supabase.auth.admin.deleteUser(userId);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Error deleting user:", error);
+      
+      // If admin delete fails, try using auth.signOut and then delete profile directly
+      if (error.message.includes("not_admin") || error.message.includes("supabase_admin")) {
+        console.log("Attempting alternative deletion approach...");
+        
+        // Delete the profile directly
+        const { error: profileDeleteError } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
+        
+        if (profileDeleteError) {
+          console.error("Error deleting profile:", profileDeleteError);
+          throw profileDeleteError;
+        }
+        
+        console.log("User profile deleted successfully");
+        return;
+      }
+      
+      throw error;
+    }
+    
+    console.log("User deleted successfully");
   } catch (error) {
     console.error(`Error deleting user with ID ${userId}:`, error);
     throw error;

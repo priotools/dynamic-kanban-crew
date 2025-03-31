@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { getUsers } from "@/services/user.service";
 import { getDepartments } from "@/services/department.service";
@@ -115,15 +114,12 @@ const UserDepartmentMapping = () => {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} />
+                        <AvatarImage src={user.avatarUrl} />
                         <AvatarFallback>
                           {user.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div>{user.name}</div>
-                        <div className="text-xs text-muted-foreground">{user.email}</div>
-                      </div>
+                      <span>{user.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
