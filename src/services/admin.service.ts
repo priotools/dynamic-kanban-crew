@@ -2,6 +2,29 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, Department } from '@/types';
 
+// User management functions
+export async function getAllUsers(): Promise<User[]> {
+  try {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*');
+    
+    if (error) throw error;
+    
+    return profiles.map((profile) => ({
+      id: profile.id,
+      name: profile.name || '',
+      email: profile.email || '',
+      role: profile.role as UserRole,
+      avatarUrl: profile.avatar_url,
+      departmentId: profile.department_id,
+    }));
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+}
+
 // Department management functions
 export async function getDepartments(): Promise<Department[]> {
   try {
@@ -154,4 +177,3 @@ export async function deleteUser(userId: string): Promise<void> {
     throw error;
   }
 }
-

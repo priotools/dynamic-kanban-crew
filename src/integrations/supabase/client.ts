@@ -16,3 +16,27 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce'
   }
 });
+
+// Helper function to check if the session is valid
+export const getValidSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data.session;
+  } catch (error) {
+    console.error("Error validating session:", error);
+    return null;
+  }
+};
+
+// Force a refresh of the session
+export const refreshSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    return data.session;
+  } catch (error) {
+    console.error("Error refreshing session:", error);
+    return null;
+  }
+};

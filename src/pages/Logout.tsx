@@ -10,6 +10,7 @@ const Logout = () => {
   const { logout, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [logoutAttempted, setLogoutAttempted] = useState(false);
+  const [logoutTimeout, setLogoutTimeout] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -22,8 +23,10 @@ const Logout = () => {
         
         // Force a redirect to login page with a delay to ensure state is updated
         setTimeout(() => {
+          // Clear any localStorage auth data as a fallback
+          localStorage.removeItem('supabase.auth.token');
           navigate("/login", { replace: true });
-        }, 500);
+        }, 1000);
       } catch (error: any) {
         console.error("Error during logout:", error);
         setError(error.message || "Failed to log out properly");
@@ -31,7 +34,21 @@ const Logout = () => {
     };
     
     performLogout();
+    
+    // Set a timeout to show manual options if logout takes too long
+    const timeoutId = setTimeout(() => {
+      setLogoutTimeout(true);
+    }, 5000);
+    
+    return () => clearTimeout(timeoutId);
   }, [logout, navigate, logoutAttempted]);
+  
+  const handleManualRedirect = () => {
+    // Clear auth data from localStorage as a fallback
+    localStorage.removeItem('supabase.auth.token');
+    // Force a redirect to login page
+    navigate("/login", { replace: true });
+  };
   
   if (error) {
     return (
@@ -50,9 +67,20 @@ const Logout = () => {
   }
   
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <span className="ml-2">Logging out...</span>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="flex items-center mb-6">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <span>Logging out...</span>
+      </div>
+      
+      {logoutTimeout && (
+        <div className="mt-8 text-center">
+          <p className="text-amber-600 mb-4">Logout is taking longer than expected.</p>
+          <Button onClick={handleManualRedirect}>
+            Go to Login Page
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

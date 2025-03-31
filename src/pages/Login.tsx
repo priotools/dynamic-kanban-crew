@@ -15,16 +15,45 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, isLoading, currentUser } = useAuth();
+  const { login, isLoading, currentUser, refreshAuth } = useAuth();
   const navigate = useNavigate();
+  const [sessionCheckAttempted, setSessionCheckAttempted] = useState(false);
 
-  // Redirect if already logged in
+  // Check for existing session and redirect if already logged in
   useEffect(() => {
-    if (currentUser && !isLoggingIn) {
-      console.log("User is logged in, redirecting to dashboard");
-      navigate("/dashboard", { replace: true });
-    }
-  }, [currentUser, navigate, isLoggingIn]);
+    const checkAuth = async () => {
+      try {
+        if (sessionCheckAttempted) return;
+        
+        // If not loading and we have a user, redirect to dashboard
+        if (!isLoading && currentUser && !isLoggingIn) {
+          console.log("User is logged in, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+        
+        // If not loading and no user, try refreshing auth once
+        if (!isLoading && !currentUser && !isLoggingIn && !sessionCheckAttempted) {
+          console.log("No user found, checking for valid session...");
+          setSessionCheckAttempted(true);
+          
+          await refreshAuth();
+          
+          // After refresh, check again for user
+          if (currentUser) {
+            console.log("Valid session found after refresh, redirecting to dashboard");
+            navigate("/dashboard", { replace: true });
+          } else {
+            console.log("No valid session found, staying on login page");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking auth state:", error);
+      }
+    };
+    
+    checkAuth();
+  }, [currentUser, isLoading, navigate, isLoggingIn, sessionCheckAttempted, refreshAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +68,12 @@ const Login = () => {
       setIsLoggingIn(true);
       await login(email, password);
       
-      // Successful login should trigger redirect via the useEffect
+      // Add a slight delay for the auth state to be fully updated
+      setTimeout(() => {
+        if (currentUser) {
+          navigate("/dashboard", { replace: true });
+        }
+      }, 500);
     } catch (error: any) {
       console.error("Login failed:", error);
       setError(error.message || "Failed to login. Please check your credentials and try again.");
@@ -49,10 +83,11 @@ const Login = () => {
   };
 
   // Show loading state only during initial auth check, not during login attempt
-  if (isLoading && !isLoggingIn) {
+  if (isLoading && !isLoggingIn && !sessionCheckAttempted) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <span>Checking authentication...</span>
       </div>
     );
   }
@@ -107,8 +142,8 @@ const Login = () => {
               <p>Password: password123</p>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button className="w-full" type="submit" disabled={isLoggingIn}>
+          <CardFooter className="flex flex-col">
+            <Button className="w-full mb-4" type="submit" disabled={isLoggingIn}>
               {isLoggingIn ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -118,6 +153,17 @@ const Login = () => {
                 "Login"
               )}
             </Button>
+            
+            {sessionCheckAttempted && !isLoggingIn && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => refreshAuth()}
+              >
+                Refresh Authentication
+              </Button>
+            )}
           </CardFooter>
         </form>
       </Card>

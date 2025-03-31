@@ -8,16 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllUsers, createUser, updateUserRole, deleteUser } from "@/services/admin.service";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2, PlusCircle, Pencil, Trash2 } from "lucide-react";
-import { UserRole } from "@/types";
+import { UserRole, User } from "@/types";
 
 export default function UserManagement() {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<any>(null);
-  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Form states
@@ -49,7 +49,8 @@ export default function UserManagement() {
   });
   
   const updateRoleMutation = useMutation({
-    mutationFn: updateUserRole,
+    mutationFn: ({ userId, role }: { userId: string, role: UserRole }) => 
+      updateUserRole(userId, role),
     onSuccess: () => {
       toast.success('User role updated successfully');
       setIsEditUserDialogOpen(false);
@@ -61,7 +62,7 @@ export default function UserManagement() {
   });
   
   const deleteUserMutation = useMutation({
-    mutationFn: deleteUser,
+    mutationFn: (userId: string) => deleteUser(userId),
     onSuccess: () => {
       toast.success('User deleted successfully');
       setIsDeleteDialogOpen(false);
@@ -116,12 +117,12 @@ export default function UserManagement() {
     deleteUserMutation.mutate(userToDelete.id);
   };
   
-  const handleOpenEditDialog = (user: any) => {
+  const handleOpenEditDialog = (user: User) => {
     setUserToEdit({ ...user });
     setIsEditUserDialogOpen(true);
   };
   
-  const handleOpenDeleteDialog = (user: any) => {
+  const handleOpenDeleteDialog = (user: User) => {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
   };
@@ -216,7 +217,7 @@ export default function UserManagement() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users && users.map((user: any) => (
+          {users && users.map((user: User) => (
             <Card key={user.id}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex justify-between items-start">
@@ -263,7 +264,7 @@ export default function UserManagement() {
               <Label htmlFor="edit-role">Role</Label>
               <Select 
                 value={userToEdit?.role} 
-                onValueChange={(value) => setUserToEdit({ ...userToEdit, role: value })}
+                onValueChange={(value) => setUserToEdit(userToEdit ? { ...userToEdit, role: value as UserRole } : null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
