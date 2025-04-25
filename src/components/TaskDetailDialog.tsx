@@ -3,11 +3,11 @@ import { Task } from "@/types";
 import { useDialog } from "@/hooks/useDialog";
 import TaskFormDialog from "./TaskFormDialog";
 import { useState, useEffect } from "react";
-import TaskHeader from "./task-detail/TaskHeader";
-import TaskDescription from "./task-detail/TaskDescription";
+import { TaskHeader } from "./task-detail/TaskHeader";
+import { TaskDescription } from "./task-detail/TaskDescription";
 import TaskMetadata from "./task-detail/TaskMetadata";
-import TaskTimestamps from "./task-detail/TaskTimestamps";
-import TaskActions from "./task-detail/TaskActions";
+import { TaskTimestamps } from "./task-detail/TaskTimestamps";
+import { TaskActions } from "./task-detail/TaskActions";
 import { getUserById } from "@/services/user.service";
 import { getDepartmentById } from "@/services/department.service";
 
@@ -76,10 +76,9 @@ export default function TaskDetailDialog({
         <TaskDescription description={task.description} />
         
         <TaskMetadata 
+          task={task}
           assignee={assignee}
-          department={department}
-          dueDate={task.dueDate}
-          tags={task.tags}
+          creator={creator}
         />
         
         <TaskTimestamps 
