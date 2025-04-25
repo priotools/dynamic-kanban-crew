@@ -1,17 +1,16 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllUsers, createUser, updateUserProfile, deleteUser } from "@/services/admin.service";
+import { getDepartments } from "@/services/department.service";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2, PlusCircle, Pencil, Trash2 } from "lucide-react";
-import { UserRole, User } from "@/types";
+import { UserRole, User, Department } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
@@ -72,7 +71,12 @@ export default function UserManagement() {
     queryKey: ['admin', 'users'],
     queryFn: getAllUsers,
   });
-  
+
+  const { data: departments } = useQuery({
+    queryKey: ['departments'],
+    queryFn: getDepartments,
+  });
+
   const createUserMutation = useMutation({
     mutationFn: (values: CreateUserFormValues) => createUser(values),
     onSuccess: () => {
@@ -149,7 +153,13 @@ export default function UserManagement() {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
   };
-  
+
+  const getDepartmentName = (departmentId: string | undefined) => {
+    if (!departmentId || !departments) return "No department";
+    const department = departments.find(d => d.id === departmentId);
+    return department ? department.name : "Unknown department";
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -320,7 +330,7 @@ export default function UserManagement() {
                   {user.departmentId && (
                     <div className="text-sm">
                       <span className="text-muted-foreground">Department: </span>
-                      {user.departmentId}
+                      {getDepartmentName(user.departmentId)}
                     </div>
                   )}
                 </div>
@@ -330,7 +340,6 @@ export default function UserManagement() {
         </div>
       )}
       
-      {/* Edit User Dialog */}
       <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -434,7 +443,6 @@ export default function UserManagement() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete User Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
