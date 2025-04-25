@@ -3,7 +3,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Task, User } from "@/types";
 import { format } from "date-fns";
-import { tagStyles } from "./taskStyles";
+import { getPriorityColor } from "./taskStyles";
 
 type TaskMetadataProps = {
   task: Task;
@@ -66,7 +66,7 @@ export default function TaskMetadata({ task, assignee, creator }: TaskMetadataPr
           <div className="text-muted-foreground text-sm">Tags</div>
           <div className="flex items-center gap-2">
             {task.tags.map((tag) => (
-              <Badge key={tag} className={tagStyles[tag] || "bg-muted-foreground"}>
+              <Badge key={tag} className="bg-muted-foreground">
                 {tag}
               </Badge>
             ))}
