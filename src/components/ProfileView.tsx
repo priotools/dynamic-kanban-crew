@@ -1,6 +1,7 @@
 
 import ProfileEditForm from "./ProfileEditForm";
 import PersonalTaskList from "./PersonalTaskList";
+import ChangePasswordForm from "./ChangePasswordForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ProfileView() {
@@ -9,11 +10,16 @@ export default function ProfileView() {
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="tasks">My Tasks</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile" className="mt-6">
           <ProfileEditForm />
+        </TabsContent>
+
+        <TabsContent value="security" className="mt-6">
+          <ChangePasswordForm />
         </TabsContent>
         
         <TabsContent value="tasks" className="mt-6">
