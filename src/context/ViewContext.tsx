@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 
-type ViewMode = 'kanban' | 'departments' | 'users' | 'profile';
+export type ViewMode = 'kanban' | 'departments' | 'users' | 'profile';
 
 interface ViewContextType {
   viewMode: ViewMode;

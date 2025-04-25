@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { getUsers } from "@/services/user.service";
 import { updateUserRole, updateUserDepartment } from "@/services/admin.service";
-import { User, UserRole } from "@/types";
+import { getDepartments } from "@/services/department.service";
+import { User, UserRole, Department } from "@/types";
 import {
   Table,
   TableBody,
@@ -25,15 +26,20 @@ import { Loader2 } from "lucide-react";
 
 const UsersManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadData = async () => {
       try {
         setIsLoading(true);
-        const usersData = await getUsers();
+        const [usersData, departmentsData] = await Promise.all([
+          getUsers(),
+          getDepartments(),
+        ]);
         setUsers(usersData);
+        setDepartments(departmentsData);
       } catch (error) {
         console.error("Error loading users:", error);
         toast.error("Failed to load users");
@@ -42,7 +48,7 @@ const UsersManagement = () => {
       }
     };
 
-    loadUsers();
+    loadData();
   }, []);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
@@ -61,6 +67,12 @@ const UsersManagement = () => {
     } finally {
       setIsUpdating(prev => ({ ...prev, [userId]: false }));
     }
+  };
+
+  const getDepartmentName = (departmentId: string | undefined) => {
+    if (!departmentId) return "None";
+    const department = departments.find(d => d.id === departmentId);
+    return department ? department.name : "Unknown";
   };
 
   if (isLoading) {
@@ -103,7 +115,7 @@ const UsersManagement = () => {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} />
+                        <AvatarImage src={user.avatarUrl} />
                         <AvatarFallback>
                           {user.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
@@ -138,7 +150,7 @@ const UsersManagement = () => {
                   <TableCell>
                     {user.departmentId ? (
                       <Badge variant="outline">
-                        {user.departmentId}
+                        {getDepartmentName(user.departmentId)}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground text-sm">

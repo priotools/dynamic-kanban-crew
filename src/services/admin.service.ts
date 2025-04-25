@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { User, UserRole, Department } from '@/types';
 
 // User management functions
@@ -7,7 +7,7 @@ export async function getAllUsers(): Promise<User[]> {
   try {
     const { data: profiles, error } = await supabase
       .from('profiles')
-      .select('*');
+      .select('*, departments(name)');
     
     if (error) throw error;
     
@@ -18,6 +18,7 @@ export async function getAllUsers(): Promise<User[]> {
       role: profile.role as UserRole,
       avatarUrl: profile.avatar_url,
       departmentId: profile.department_id,
+      departmentName: profile.departments?.name
     }));
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -105,21 +106,23 @@ export async function createUser(data: {
   avatarUrl?: string;
 }): Promise<User> {
   try {
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // First, create the user in auth system
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
-      email_confirm: true,
-      user_metadata: {
-        name: data.name,
-        avatar_url: data.avatarUrl
+      options: {
+        data: {
+          name: data.name,
+          avatar_url: data.avatarUrl,
+          role: data.role
+        }
       }
     });
     
     if (authError) throw authError;
     if (!authData.user) throw new Error("User creation failed");
     
-    // Update profile with role and other data
+    // Update profile with additional data
     const { error: profileError } = await supabase
       .from('profiles')
       .update({ 
@@ -215,10 +218,18 @@ export async function updateUserDepartment(userId: string, departmentId: string 
 
 export async function deleteUser(userId: string): Promise<void> {
   try {
-    // This will delete the auth user, which will cascade to the profile
+    // Delete user from auth system
     const { error } = await supabase.auth.admin.deleteUser(userId);
     
-    if (error) throw error;
+    if (error) {
+      // Fallback if admin API is not available - delete profile directly
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+        
+      if (profileError) throw profileError;
+    }
   } catch (error) {
     console.error(`Error deleting user with ID ${userId}:`, error);
     throw error;
