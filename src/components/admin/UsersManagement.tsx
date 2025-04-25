@@ -69,6 +69,24 @@ const UsersManagement = () => {
     }
   };
 
+  const handleDepartmentChange = async (userId: string, departmentId: string) => {
+    try {
+      setIsUpdating(prev => ({ ...prev, [userId]: true }));
+      await updateUserDepartment(userId, departmentId);
+      
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, departmentId } : user
+      ));
+      
+      toast.success("User department updated successfully");
+    } catch (error) {
+      console.error("Error updating user department:", error);
+      toast.error("Failed to update user department");
+    } finally {
+      setIsUpdating(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
   const getDepartmentName = (departmentId: string | undefined) => {
     if (!departmentId) return "None";
     const department = departments.find(d => d.id === departmentId);
@@ -148,15 +166,31 @@ const UsersManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {user.departmentId ? (
-                      <Badge variant="outline">
-                        {getDepartmentName(user.departmentId)}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">
-                        No department
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isUpdating[user.id] ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Select
+                          value={user.departmentId || ""}
+                          onValueChange={(value) => 
+                            handleDepartmentChange(user.id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="Select department">
+                              {user.departmentId ? getDepartmentName(user.departmentId) : "No department"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>
+                                {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

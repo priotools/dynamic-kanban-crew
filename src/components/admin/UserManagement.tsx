@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,7 +78,16 @@ export default function UserManagement() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: (values: CreateUserFormValues) => createUser(values),
+    mutationFn: (values: CreateUserFormValues) => {
+      const userData = {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        role: values.role as UserRole,
+        avatarUrl: values.avatarUrl
+      };
+      return createUser(userData);
+    },
     onSuccess: () => {
       toast.success('User created successfully');
       setIsAddUserDialogOpen(false);
