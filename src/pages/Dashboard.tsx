@@ -16,6 +16,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [redirectAttempted, setRedirectAttempted] = useState(false);
   const [showRedirectOptions, setShowRedirectOptions] = useState(false);
+  const [profileError, setProfileError] = useState(false);
   
   useEffect(() => {
     let redirectTimeout: number;
@@ -24,8 +25,17 @@ const Dashboard = () => {
     const checkAuth = async () => {
       // If authentication check is complete 
       if (!isLoading) {
+        // Even if currentUser is null but we have a valid session token, allow access to dashboard
+        // This handles the case where authentication succeeded but profile fetching failed
+        const hasSession = localStorage.getItem('supabase.auth.token') !== null;
+        
         if (currentUser) {
           console.log("User authenticated, staying on dashboard");
+          return;
+        } else if (hasSession) {
+          // We have a token but no user profile - show UI for this case
+          console.log("Valid auth token but no profile data");
+          setProfileError(true);
           return;
         }
         
@@ -37,10 +47,16 @@ const Dashboard = () => {
             // Try to refresh the auth state first
             await refreshAuth();
             
-            // If we still don't have a user after refresh, redirect to login
-            if (!currentUser) {
+            // Check again for session
+            const hasSessionAfterRefresh = localStorage.getItem('supabase.auth.token') !== null;
+            
+            // If still no user after refresh and no valid session, redirect to login
+            if (!currentUser && !hasSessionAfterRefresh) {
               console.log("No valid session found, redirecting to login");
               navigate("/login", { replace: true });
+            } else if (!currentUser && hasSessionAfterRefresh) {
+              // We have a session but no profile
+              setProfileError(true);
             }
           } catch (error) {
             console.error("Error refreshing auth on dashboard:", error);
@@ -68,8 +84,15 @@ const Dashboard = () => {
       toast.info("Manually refreshing authentication...");
       await refreshAuth();
       
+      // Check for session even if currentUser is still null
+      const hasSession = localStorage.getItem('supabase.auth.token') !== null;
+      
       if (currentUser) {
         toast.success("Authentication refreshed successfully");
+        setProfileError(false);
+      } else if (hasSession) {
+        toast.info("Valid session found but profile data could not be loaded");
+        setProfileError(true);
       } else {
         toast.info("No active session found, please log in");
         navigate("/login", { replace: true });
@@ -127,7 +150,51 @@ const Dashboard = () => {
     );
   }
   
-  if (redirectAttempted && !currentUser) {
+  if (profileError) {
+    return (
+      <div className="min-h-screen">
+        <div className="container mx-auto px-4 py-8">
+          <Alert variant="warning" className="mb-6">
+            <AlertCircle className="h-5 w-5" />
+            <AlertTitle>Profile Data Unavailable</AlertTitle>
+            <AlertDescription>
+              You're authenticated successfully, but we couldn't fetch your profile data from the database. 
+              This could be due to a temporary issue or a database permissions problem.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <Button 
+              onClick={handleManualRefresh} 
+              variant="default"
+              className="md:w-auto"
+            >
+              Retry Loading Profile
+            </Button>
+            <Button 
+              onClick={() => navigate("/login")} 
+              variant="outline"
+              className="md:w-auto"
+            >
+              Back to Login
+            </Button>
+          </div>
+          
+          <p className="text-muted-foreground text-sm mb-4">
+            You can still use some features of the dashboard, but personalized content may be limited.
+          </p>
+          
+          <KanbanProvider>
+            <ViewProvider>
+              <DashboardLayout />
+            </ViewProvider>
+          </KanbanProvider>
+        </div>
+      </div>
+    );
+  }
+  
+  if (redirectAttempted && !currentUser && !localStorage.getItem('supabase.auth.token')) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
@@ -142,10 +209,7 @@ const Dashboard = () => {
     );
   }
   
-  if (!currentUser) {
-    return null; // The useEffect will handle redirect
-  }
-  
+  // If we get here, either we have a user or a valid session token, proceed to dashboard
   return (
     <KanbanProvider>
       <ViewProvider>
@@ -161,6 +225,19 @@ const Dashboard = () => {
             </Alert>
           </div>
         )}
+        
+        {profileError && (
+          <div className="container mx-auto px-4 py-4">
+            <Alert variant="warning" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Limited Access</AlertTitle>
+              <AlertDescription>
+                You're logged in, but we couldn't load your profile data. Some personalized features may be unavailable.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        
         <DashboardLayout />
       </ViewProvider>
     </KanbanProvider>

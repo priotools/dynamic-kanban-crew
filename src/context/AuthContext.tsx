@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
 import { supabase, refreshSession } from '@/integrations/supabase/client';
@@ -45,7 +44,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   setCurrentUser(user);
                 } catch (error) {
                   console.error('Error fetching user details:', error);
+                  // Even if profile fetch fails, we still have authentication
+                  // Set currentUser to null but don't invalidate the session
                   setCurrentUser(null);
+                  
+                  // Log this error but don't throw - we want to keep the session valid
+                  // even with a profile fetch error
+                  console.warn('User is authenticated but profile lookup failed');
                 }
               } else {
                 setCurrentUser(null);
@@ -69,8 +74,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const refreshedSession = await refreshSession();
             if (refreshedSession?.user) {
-              const user = await getUserById(refreshedSession.user.id);
-              setCurrentUser(user);
+              try {
+                const user = await getUserById(refreshedSession.user.id);
+                setCurrentUser(user);
+              } catch (profileError) {
+                console.error('Error fetching profile after session refresh:', profileError);
+                // We are authenticated but profile fetch failed
+                console.warn('User is authenticated but profile lookup failed after refresh');
+              }
             }
           } catch (refreshError) {
             console.error('Failed to refresh session:', refreshError);
@@ -87,6 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCurrentUser(user);
           } catch (userError) {
             console.error('Error fetching user details:', userError);
+            // We have a valid session but couldn't fetch the profile
+            console.warn('User is authenticated but profile lookup failed');
             setCurrentUser(null);
           }
         }
@@ -151,8 +164,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const refreshedSession = await refreshSession();
       if (refreshedSession?.user) {
-        const user = await getUserById(refreshedSession.user.id);
-        setCurrentUser(user);
+        try {
+          const user = await getUserById(refreshedSession.user.id);
+          setCurrentUser(user);
+        } catch (profileError) {
+          console.error('Error fetching user profile during refresh:', profileError);
+          // We have authentication but profile fetch failed
+          // Set currentUser to null but don't invalidate the session
+          setCurrentUser(null);
+        }
       } else {
         // If no session after refresh, user is logged out
         setCurrentUser(null);
@@ -184,11 +204,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           toast.success("Logged in successfully");
           // Set activity timestamp on successful login
           localStorage.setItem('lastActivity', Date.now().toString());
+          return { success: true, user };
         } catch (userError) {
           console.error('Error fetching user after login:', userError);
-          toast.error("Logged in but couldn't fetch user profile");
+          // We are authenticated but profile fetch failed
+          toast.warning("Logged in but couldn't fetch user profile");
+          // Return success but with no profile data
+          // The auth token is still valid so the user is actually logged in
+          return { success: true, user: null, profileError: true };
         }
       }
+      return { success: false };
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || "Login failed");

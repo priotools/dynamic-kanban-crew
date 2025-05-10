@@ -66,14 +66,16 @@ const Login = () => {
     try {
       setError(null);
       setIsLoggingIn(true);
-      await login(email, password);
       
-      // Add a slight delay for the auth state to be fully updated
+      // Attempt to login
+      const authResult = await login(email, password);
+      
+      // If we have a valid session/token but no profile data, still proceed to dashboard
+      // The dashboard will handle displaying appropriate messages about the missing profile
       setTimeout(() => {
-        if (currentUser) {
-          navigate("/dashboard", { replace: true });
-        }
+        navigate("/dashboard", { replace: true });
       }, 500);
+      
     } catch (error: any) {
       console.error("Login failed:", error);
       setError(error.message || "Failed to login. Please check your credentials and try again.");
