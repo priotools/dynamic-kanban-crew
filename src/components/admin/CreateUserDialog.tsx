@@ -46,7 +46,15 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
   const onSubmit = async (values: CreateUserFormValues) => {
     setIsLoading(true);
     try {
-      await createUser(values);
+      // Fix: Make sure all required properties are passed to createUser
+      await createUser({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        role: values.role,
+        avatarUrl: values.avatarUrl || undefined
+      });
+      
       toast.success("User created successfully");
       onSuccess();
       onClose();
