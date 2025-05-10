@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
 import { supabase, refreshSession } from '@/integrations/supabase/client';
@@ -9,7 +10,11 @@ interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
   isSupabaseReady: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{
+    success: boolean;
+    user?: User | null;
+    profileError?: boolean;
+  }>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
 }

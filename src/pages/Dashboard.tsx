@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -154,7 +153,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen">
         <div className="container mx-auto px-4 py-8">
-          <Alert variant="warning" className="mb-6">
+          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-5 w-5" />
             <AlertTitle>Profile Data Unavailable</AlertTitle>
             <AlertDescription>
@@ -228,7 +227,7 @@ const Dashboard = () => {
         
         {profileError && (
           <div className="container mx-auto px-4 py-4">
-            <Alert variant="warning" className="mb-4">
+            <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Limited Access</AlertTitle>
               <AlertDescription>
